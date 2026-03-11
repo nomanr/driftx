@@ -8,6 +8,9 @@ import { createLogger, setLogger } from './logger.js';
 import { checkPrerequisites } from './prerequisites.js';
 import { formatPrerequisiteTable } from './commands/doctor.js';
 import { detectFramework, generateConfig } from './commands/init.js';
+import { DeviceDiscovery } from './devices/discovery.js';
+import { formatDeviceTable } from './commands/devices.js';
+import { runCapture } from './commands/capture.js';
 import { ExitCode } from './exit-codes.js';
 
 const require = createRequire(import.meta.url);
@@ -56,6 +59,37 @@ export function createProgram(): Command {
       const configPath = join(cwd, '.driftrc.json');
       writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
       console.log(`Created ${configPath} (framework: ${framework})`);
+    });
+
+  program
+    .command('devices')
+    .description('List connected devices and simulators')
+    .action(async () => {
+      const shell = new RealShell();
+      const discovery = new DeviceDiscovery(shell);
+      const devices = await discovery.list();
+      console.log(formatDeviceTable(devices));
+    });
+
+  program
+    .command('capture')
+    .description('Capture a screenshot from a device')
+    .option('-d, --device <id>', 'device ID or name')
+    .option('-o, --output <path>', 'output file path')
+    .option('--settle', 'enable settle-time check')
+    .option('--no-settle', 'disable settle-time check')
+    .action(async (opts) => {
+      const shell = new RealShell();
+      const config = await loadConfig();
+      const result = await runCapture(shell, config, {
+        device: opts.device,
+        output: opts.output,
+        settleCheck: opts.settle,
+      });
+      console.log(`Screenshot saved: ${result.path}`);
+      if (result.runId) {
+        console.log(`Run ID: ${result.runId}`);
+      }
     });
 
   return program;
