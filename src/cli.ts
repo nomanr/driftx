@@ -11,6 +11,7 @@ import { detectFramework, generateConfig } from './commands/init.js';
 import { DeviceDiscovery } from './devices/discovery.js';
 import { formatDeviceTable } from './commands/devices.js';
 import { runCapture } from './commands/capture.js';
+import { runCompare, formatCompareOutput } from './commands/compare.js';
 import { ExitCode } from './exit-codes.js';
 
 const require = createRequire(import.meta.url);
@@ -90,6 +91,26 @@ export function createProgram(): Command {
       if (result.runId) {
         console.log(`Run ID: ${result.runId}`);
       }
+    });
+
+  program
+    .command('compare')
+    .description('Compare a screenshot against a design')
+    .requiredOption('--design <path>', 'path to design image')
+    .option('-d, --device <id>', 'device ID or name')
+    .option('--threshold <n>', 'diff percentage threshold', parseFloat)
+    .option('--screenshot <path>', 'use existing screenshot instead of capturing')
+    .action(async (opts) => {
+      const shell = new RealShell();
+      const config = await loadConfig();
+      const { result, exitCode } = await runCompare(shell, config, {
+        design: opts.design,
+        device: opts.device,
+        threshold: opts.threshold,
+        screenshot: opts.screenshot,
+      });
+      console.log(formatCompareOutput(result));
+      process.exitCode = exitCode;
     });
 
   return program;
