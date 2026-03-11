@@ -37,7 +37,8 @@ export function createProgram(): Command {
     .description('Check system prerequisites for drift')
     .action(async () => {
       const shell = new RealShell();
-      const checks = await checkPrerequisites(shell);
+      const config = await loadConfig();
+      const checks = await checkPrerequisites(shell, config.metroPort);
       const { table, exitCode } = formatPrerequisiteTable(checks);
       console.log(table);
       process.exitCode = exitCode;

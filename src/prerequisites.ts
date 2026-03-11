@@ -9,7 +9,7 @@ interface PrerequisiteSpec {
   fix: string;
 }
 
-const PREREQUISITES: PrerequisiteSpec[] = [
+const CLI_PREREQUISITES: PrerequisiteSpec[] = [
   {
     name: 'node',
     cmd: 'node',
@@ -37,14 +37,6 @@ const PREREQUISITES: PrerequisiteSpec[] = [
     versionParser: (stdout) => stdout.trim(),
     fix: 'Install Xcode Command Line Tools: xcode-select --install',
   },
-  {
-    name: 'metro',
-    cmd: 'npx',
-    args: ['react-native', 'info'],
-    required: false,
-    versionParser: (stdout) => stdout.trim(),
-    fix: 'Start Metro bundler: npx react-native start',
-  },
 ];
 
 async function checkOne(spec: PrerequisiteSpec, shell: Shell): Promise<PrerequisiteCheck> {
@@ -67,6 +59,36 @@ async function checkOne(spec: PrerequisiteSpec, shell: Shell): Promise<Prerequis
   }
 }
 
-export async function checkPrerequisites(shell: Shell): Promise<PrerequisiteCheck[]> {
-  return Promise.all(PREREQUISITES.map((spec) => checkOne(spec, shell)));
+async function checkMetro(port: number): Promise<PrerequisiteCheck> {
+  try {
+    const { default: http } = await import('node:http');
+    const status = await new Promise<string>((resolve, reject) => {
+      const req = http.get(`http://localhost:${port}/status`, { timeout: 2000 }, (res) => {
+        let data = '';
+        res.on('data', (chunk: Buffer) => { data += chunk; });
+        res.on('end', () => resolve(data));
+      });
+      req.on('error', reject);
+      req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    });
+    return {
+      name: 'metro',
+      required: false,
+      available: true,
+      version: `running on :${port}`,
+    };
+  } catch {
+    return {
+      name: 'metro',
+      required: false,
+      available: false,
+      fix: 'Start Metro bundler: npx react-native start',
+    };
+  }
+}
+
+export async function checkPrerequisites(shell: Shell, metroPort = 8081): Promise<PrerequisiteCheck[]> {
+  const cliChecks = CLI_PREREQUISITES.map((spec) => checkOne(spec, shell));
+  const metro = checkMetro(metroPort);
+  return Promise.all([...cliChecks, metro]);
 }
