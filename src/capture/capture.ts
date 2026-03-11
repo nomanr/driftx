@@ -9,7 +9,7 @@ export function isScreenSettled(buf1: Buffer, buf2: Buffer, maxDelta: number): b
   const img1 = PNG.sync.read(buf1);
   const img2 = PNG.sync.read(buf2);
   if (img1.width !== img2.width || img1.height !== img2.height) return false;
-  const diffPixels = pixelmatch(img1.data, img2.data, null, img1.width, img1.height, {
+  const diffPixels = pixelmatch(img1.data, img2.data, undefined, img1.width, img1.height, {
     threshold: 0.1,
   });
   const totalPixels = img1.width * img1.height;
