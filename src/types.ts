@@ -34,7 +34,7 @@ export interface ExpectedValue {
 }
 
 export interface DiffEvidence {
-  type: 'pixel' | 'tree' | 'accessibility';
+  type: 'pixel' | 'tree' | 'accessibility' | 'semantic' | 'token' | 'regression';
   score: number;
   note: string;
 }
@@ -58,7 +58,12 @@ export interface DiffFinding {
     | 'content'
     | 'missing'
     | 'extra'
-    | 'unknown';
+    | 'unknown'
+    | 'accessibility'
+    | 'text-mismatch'
+    | 'hierarchy'
+    | 'regression'
+    | 'design-token';
   severity: 'critical' | 'major' | 'minor' | 'info';
   confidence: number;
   region: BoundingBox;
