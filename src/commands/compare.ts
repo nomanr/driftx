@@ -1,8 +1,11 @@
-import type { Shell, DiffResult, RunMetadata } from '../types.js';
+import type { Shell, DiffResult, DiffFinding, RunMetadata, DeviceInfo, InspectionCapabilities } from '../types.js';
 import type { DriftConfig } from '../config.js';
 import { DeviceDiscovery } from '../devices/discovery.js';
 import { captureScreenshot } from '../capture/capture.js';
 import { runComparison } from '../diff/compare.js';
+import { TreeInspector } from '../inspect/tree-inspector.js';
+import { matchRegionsToComponents } from '../inspect/component-matcher.js';
+import { generateFindings } from '../inspect/finding-generator.js';
 import { RunStore } from '../run-store.js';
 import { ExitCode } from '../exit-codes.js';
 import { pickDevice } from './device-picker.js';
@@ -26,6 +29,7 @@ export async function runCompare(
   let screenshotPath: string;
   let deviceId = 'unknown';
   let platform = config.platform;
+  let deviceInfo: DeviceInfo | undefined;
 
   if (options.screenshot) {
     screenshotPath = options.screenshot;
@@ -45,6 +49,7 @@ export async function runCompare(
 
     deviceId = device.id;
     platform = device.platform;
+    deviceInfo = device;
 
     const buffer = await captureScreenshot(shell, device, {
       settleCheck: config.settleCheckEnabled,
@@ -75,6 +80,25 @@ export async function runCompare(
     await store.writeArtifact(run.runId, `regions/${crop.id}.png`, crop.buffer);
   }
 
+  let findings: DiffFinding[] = [];
+  let inspectionCapabilities: InspectionCapabilities = {
+    tree: 'none', sourceMapping: 'none', styles: 'none', protocol: 'none',
+  };
+
+  if (compareResult.regions.length > 0 && deviceInfo) {
+    const inspector = new TreeInspector(shell);
+    const inspectResult = await inspector.inspect(deviceInfo, {
+      devToolsPort: config.devToolsPort,
+      timeoutMs: config.timeouts.treeInspectionMs,
+    });
+    inspectionCapabilities = inspectResult.capabilities;
+
+    const matches = matchRegionsToComponents(compareResult.regions, inspectResult.tree);
+    findings = generateFindings(compareResult.regions, matches, compareResult.totalPixels);
+  } else {
+    findings = generateFindings(compareResult.regions, [], compareResult.totalPixels);
+  }
+
   const startedAt = new Date().toISOString();
   const metadata: Partial<RunMetadata> = {
     runId: run.runId,
@@ -96,9 +120,9 @@ export async function runCompare(
     diffPixels: compareResult.diffPixels,
     diffPercentage: compareResult.diffPercentage,
     regions: compareResult.regions,
-    findings: [],
+    findings,
     capabilities: {
-      inspection: { tree: 'none', sourceMapping: 'none', styles: 'none', protocol: 'none' },
+      inspection: inspectionCapabilities,
       scrollCapture: { supported: false, reason: 'Not implemented', mode: 'none' },
       sourceMapping: false,
       prerequisites: [],
