@@ -112,9 +112,7 @@ export async function discoverTargets(metroPort: number): Promise<CdpTarget[]> {
 }
 
 export function findRuntimeTarget(targets: CdpTarget[], deviceName?: string): CdpTarget | undefined {
-  const rnTargets = targets.filter((t) =>
-    t.reactNative && t.description.includes('React Native'),
-  );
+  const rnTargets = targets.filter((t) => !!t.reactNative);
 
   if (deviceName) {
     return rnTargets.find((t) =>

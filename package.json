@@ -1,11 +1,16 @@
 {
   "name": "driftx",
-  "version": "0.1.0",
-  "description": "Visual diff tool for React Native and Android development",
+  "version": "0.1.1",
+  "description": "Visual diff tool for mobile development — Android, iOS, and React Native",
   "type": "module",
+  "main": "./dist/bin.js",
   "bin": {
     "driftx": "./dist/bin.js"
   },
+  "files": [
+    "dist",
+    "driftx-plugin"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -17,7 +22,11 @@
   },
   "keywords": [
     "react-native",
+    "android",
+    "ios",
+    "mobile",
     "visual-diff",
+    "accessibility",
     "screenshot",
     "testing"
   ],

@@ -1,6 +1,6 @@
 ---
 name: driftx
-description: Visual comparison, accessibility audit, and layout regression for React Native and Android apps. Use when the user asks to compare their app against a design, check accessibility, detect visual regressions, inspect the component tree, or capture screenshots from a device/simulator.
+description: Visual comparison, accessibility audit, layout regression, and device interaction for mobile apps (Android, iOS, React Native). Use when the user asks to compare their app against a design, check accessibility, detect visual regressions, inspect the component tree, capture screenshots, or interact with a device/simulator (tap, type, swipe, navigate).
 ---
 
 # driftx — Visual Analysis for React Native & Android
@@ -11,6 +11,8 @@ Use driftx when the user wants to:
 - Detect layout regressions between builds
 - Inspect the React Native component tree on a device
 - Capture a screenshot from a running simulator/emulator
+- Interact with the app — tap buttons, type text, swipe, navigate back, open deep links
+- Test a user flow end-to-end (navigate, interact, then verify visually)
 
 ## Prerequisites
 
@@ -178,6 +180,44 @@ Read `report.md` for a formatted summary. Read `result.json` for structured data
 - `minor` — small issues (slightly small tap targets)
 - `info` — informational (empty text nodes)
 
+## Interpreting Visual Differences
+
+When comparing a design against a live app, **distinguish between structural issues and dynamic data**. Not every pixel difference is a bug.
+
+### Dynamic data (NOT issues)
+
+These are expected to differ between a design mockup and a live app — do NOT report them as mismatches:
+
+- **Counts and numbers** — "12 stops" vs "243 stops", "97" vs "99+", timestamps, dates
+- **User-specific text** — names, email addresses, avatars, profile data
+- **API-driven content** — store names, product titles, list items, map labels, notification badges
+- **Images from a server** — map tiles, avatars, product images, thumbnails
+
+### Structural issues (REAL issues)
+
+These are actual design deviations that should be reported:
+
+- **Missing or extra UI elements** — buttons, cards, banners not in the design
+- **Different labels/icons** — tab bar says "Settings" but design says "Account", wrong icon
+- **Layout differences** — spacing, alignment, sizing that doesn't match the design
+- **Typography changes** — bold vs regular, different font size, wrong color
+- **Style differences** — wrong background color, border radius, shadows
+
+### How to present comparison results
+
+When showing a design-vs-app comparison table, add a **Type** column:
+
+```
+| Area | Design | App | Type | Match? |
+|------|--------|-----|------|--------|
+| Stop count | "12 stops" | "243 stops" | Dynamic data | OK |
+| Tab labels | "Account" | "Settings" | Structural | Mismatch |
+| Alert badge | 97 | 99+ | Dynamic data | OK |
+| Action buttons | None | "View stops..." | Structural | Mismatch — extra element |
+```
+
+Mark dynamic data rows as **OK** even if the values differ. Only flag structural differences as mismatches. Summarize by counting only structural mismatches, not dynamic data differences.
+
 ## Workflow Patterns
 
 ### Compare against a Figma design
@@ -188,7 +228,8 @@ If the user has a Figma MCP server connected, use it to export the frame as an i
 2. Run `npx driftx compare --design <saved-image-path> --format json`
 3. Read the JSON output to understand differences
 4. Read artifact files (diff mask, report.md) for visual context
-5. Suggest code fixes based on the findings
+5. **Classify each difference** as dynamic data or structural issue
+6. Only suggest code fixes for structural issues
 
 If no Figma MCP, ask the user to provide the design image path.
 
@@ -290,6 +331,101 @@ driftx uses `.driftxrc.json` in the project root. Run `npx driftx init` to creat
 - `diffThreshold`: Pass/fail percentage threshold (default 0.01)
 - `analyses.default`: Default analyses to run
 - `analyses.disabled`: Analyses to never run
+
+## Output Formatting Rules
+
+**Always present results in a consistent, structured format.** Follow these rules strictly:
+
+### Results Table
+
+Every analysis result — whether it has issues or not — must be shown in a table. Use this format for **each device**:
+
+**When issues are found:**
+
+```
+### <Device Name> (<Platform>)
+
+<N> components checked — <M> issues found.
+
+| Severity | Issue | Component | Location |
+|----------|-------|-----------|----------|
+| Major | Missing accessibilityLabel | android.widget.Button | x:954 y:164 (105x105px) |
+| Minor | Small tap target (36x36) | RCTText | x:10 y:200 (36x36px) |
+```
+
+**When no issues are found:**
+
+```
+### <Device Name> (<Platform>)
+
+<N> components checked — no issues found.
+
+| Category | Count |
+|----------|-------|
+| Missing labels | 0 |
+| Small tap targets | 0 |
+| Images without alt text | 0 |
+| Empty text nodes | 0 |
+```
+
+**For pixel diff results:**
+
+```
+### <Device Name> (<Platform>)
+
+| Metric | Value |
+|--------|-------|
+| Diff | 2.10% (5000 / 238000 pixels) |
+| Regions | 3 |
+| Duration | 450ms |
+| Result | FAIL |
+
+| # | Severity | Category | Component | Region |
+|---|----------|----------|-----------|--------|
+| 1 | Critical | spacing | LoginButton [login-btn] | (10,20) 100x50 |
+```
+
+### Next Actions
+
+After presenting results, **always offer next actions using the AskUserQuestion tool with `options`**. This renders as a radio-button selection menu. Never present choices as plain numbered text.
+
+Example — after a11y audit with issues:
+```
+AskUserQuestion(
+  question: "What would you like to do next?",
+  options: [
+    "Capture a screenshot to visually identify the issue",
+    "Inspect the component tree to find the source component",
+    "Fix the issue (add accessibilityLabel)",
+    "Run the audit again after changes",
+    "Run on another device"
+  ]
+)
+```
+
+Example — after clean results (no issues):
+```
+AskUserQuestion(
+  question: "What would you like to do next?",
+  options: [
+    "Run pixel diff against a design",
+    "Run regression test against previous baseline",
+    "Check another device",
+    "Inspect the component tree",
+    "Capture a screenshot"
+  ]
+)
+```
+
+Tailor the options to the context. Always use AskUserQuestion with options — never plain text lists.
+
+### General Rules
+
+- **Consistent style across all devices** — if you show a table for one device, show a table for all
+- **Always include the device name and platform** as a header
+- **Always include component count** (from `metadata.totalChecked`)
+- **Always offer next actions** as a numbered list
+- **Read artifact files** (`report.md`, `result.json`) when you need more detail about findings
 
 ## Error Handling
 
