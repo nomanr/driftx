@@ -1558,6 +1558,32 @@ See: `docs/superpowers/specs/2026-03-12-analysis-plugin-system-design.md`
 4. JUnit XML output for CI.
 5. GitHub Actions integration example.
 
+### Phase 12: Device Interaction Layer — P0
+
+**Goal:** Give AI agents hands — tree-aware device interaction primitives that let agents navigate, tap, type, and verify the running app.
+
+**Motivation:** Phases 0–11 give agents eyes (screenshot, inspect, diff). This phase closes the feedback loop: agents can write UI code, then interact with the running app to verify it works — without the developer touching the emulator.
+
+**Interaction primitives:**
+
+1. `src/interact/types.ts` — Interaction types (TapTarget, SwipeGesture, TextInput, KeyEvent).
+2. `src/interact/resolver.ts` — Tree-aware target resolution: component name/testID → bounds → center coordinates.
+3. `src/interact/android.ts` — Android interaction via `adb shell input` (tap, swipe, text, keyevent, deep link via `am start`).
+4. `src/interact/ios.ts` — iOS interaction via `xcrun simctl` (openurl, sendkey) + AppleScript (tap, swipe) + `applesimutils` as optional fallback.
+5. `src/interact/gestures.ts` — High-level gesture API: `tap(target)`, `longPress(target)`, `swipe(direction)`, `type(target, text)`, `goBack()`, `openDeepLink(url)`.
+6. Wire up `drift tap`, `drift type`, `drift swipe` CLI commands (useful for debugging, but primary consumer is the AI agent plugin).
+
+**Key design decisions:**
+- Target resolution uses the component tree (from Phase 2), not raw coordinates. `tap("LoginButton")` resolves via tree lookup → bounds → center point.
+- Zero extra dependencies for Android (`adb` already required). iOS uses `xcrun simctl` + `osascript` (both ship with macOS/Xcode). No idb dependency.
+- Interaction commands return the new screen state (screenshot + tree) so agents get immediate feedback.
+
+**Claude Code plugin integration (extends Phase 9):**
+- Add interaction tools to the plugin: `tap`, `type`, `swipe`, `go_back`, `open_url`, `get_screen_state`.
+- Agent workflow becomes: write code → hot reload → `get_screen_state()` → verify → `tap("SubmitButton")` → verify next screen.
+
+**Deliverable:** AI agents can navigate and interact with the running app through the component tree. `drift tap --component LoginButton` works from CLI. Claude Code plugin exposes interaction tools alongside existing capture/inspect/compare tools.
+
 ---
 
 ## 17. Technical Challenges and Solutions
