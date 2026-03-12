@@ -129,7 +129,7 @@ describe('TreeInspector strategy cache', () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'drift-cache-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'driftx-cache-test-'));
   });
 
   afterEach(() => {

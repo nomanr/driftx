@@ -1,11 +1,11 @@
 ---
-name: drift
+name: driftx
 description: Visual comparison, accessibility audit, and layout regression for React Native and Android apps. Use when the user asks to compare their app against a design, check accessibility, detect visual regressions, inspect the component tree, or capture screenshots from a device/simulator.
 ---
 
-# drift — Visual Analysis for React Native & Android
+# driftx — Visual Analysis for React Native & Android
 
-Use drift when the user wants to:
+Use driftx when the user wants to:
 - Compare their running app against a design image (Figma export, mockup, etc.)
 - Run an accessibility audit on the component tree
 - Detect layout regressions between builds
@@ -14,33 +14,33 @@ Use drift when the user wants to:
 
 ## Prerequisites
 
-drift must be installed in the project: `npm install drift` or available globally.
-Run `npx drift doctor` to verify the environment is set up correctly.
+driftx must be installed in the project: `npm install driftx` or available globally.
+Run `npx driftx doctor` to verify the environment is set up correctly.
 
 ## Commands Reference
 
-### `drift compare` — Run visual analysis
+### `driftx compare` — Run visual analysis
 
 The primary command. Compares a screenshot from a running device against a design image or baseline.
 
 ```bash
 # Compare against a design image
-npx drift compare --design path/to/design.png --format json
+npx driftx compare --design path/to/design.png --format json
 
 # Compare with specific device
-npx drift compare --design path/to/design.png --device "iPhone 16 Pro" --format json
+npx driftx compare --design path/to/design.png --device "iPhone 16 Pro" --format json
 
 # Use an existing screenshot instead of capturing
-npx drift compare --design path/to/design.png --screenshot path/to/screenshot.png --format json
+npx driftx compare --design path/to/design.png --screenshot path/to/screenshot.png --format json
 
 # Run only specific analyses
-npx drift compare --design path/to/design.png --with pixel,a11y --format json
+npx driftx compare --design path/to/design.png --with pixel,a11y --format json
 
 # Exclude specific analyses
-npx drift compare --design path/to/design.png --without pixel --format json
+npx driftx compare --design path/to/design.png --without pixel --format json
 
 # Regression mode — compare against previous run (no design needed)
-npx drift compare --baseline --format json
+npx driftx compare --baseline --format json
 ```
 
 **Flags:**
@@ -64,36 +64,36 @@ npx drift compare --baseline --format json
 
 **Smart defaults:** When no `--with`/`--without` is specified, analyses auto-enable based on available inputs. You don't need to specify `--with` unless you want to override.
 
-### `drift inspect` — Inspect component tree
+### `driftx inspect` — Inspect component tree
 
 ```bash
-npx drift inspect --format json
-npx drift inspect --device "Pixel 8" --format json
+npx driftx inspect --format json
+npx driftx inspect --device "Pixel 8" --format json
 ```
 
 Returns the React Native component tree with component names, testIDs, text content, and bounds.
 
-### `drift devices` — List connected devices
+### `driftx devices` — List connected devices
 
 ```bash
-npx drift devices --format json
+npx driftx devices --format json
 ```
 
 Returns available simulators/emulators and their state (booted/offline).
 
-### `drift capture` — Capture screenshot
+### `driftx capture` — Capture screenshot
 
 ```bash
-npx drift capture --output screenshot.png
-npx drift capture --device "iPhone 16 Pro" --output screenshot.png
+npx driftx capture --output screenshot.png
+npx driftx capture --device "iPhone 16 Pro" --output screenshot.png
 ```
 
 Captures a screenshot from the device and saves it to the specified path.
 
-### `drift doctor` — Check prerequisites
+### `driftx doctor` — Check prerequisites
 
 ```bash
-npx drift doctor --format json
+npx driftx doctor --format json
 ```
 
 Checks that adb, xcrun, Metro, etc. are available.
@@ -102,7 +102,7 @@ Checks that adb, xcrun, Metro, etc. are available.
 
 ### JSON format (CompareReport)
 
-When using `--format json`, `drift compare` outputs a `CompareReport`:
+When using `--format json`, `driftx compare` outputs a `CompareReport`:
 
 ```json
 {
@@ -137,7 +137,7 @@ When using `--format json`, `drift compare` outputs a `CompareReport`:
     "summary": "...",
     "durationMs": 460
   },
-  "artifactDir": ".drift/runs/abc123"
+  "artifactDir": ".driftx/runs/abc123"
 }
 ```
 
@@ -149,7 +149,7 @@ Key fields to check:
 
 ### Artifacts
 
-After a compare run, artifacts are saved to `.drift/runs/<runId>/`:
+After a compare run, artifacts are saved to `.driftx/runs/<runId>/`:
 
 | File | Description |
 |------|-------------|
@@ -182,10 +182,10 @@ Read `report.md` for a formatted summary. Read `result.json` for structured data
 
 ### Compare against a Figma design
 
-If the user has a Figma MCP server connected, use it to export the frame as an image first, then run drift:
+If the user has a Figma MCP server connected, use it to export the frame as an image first, then run driftx:
 
 1. Use Figma MCP to get the design frame → save as PNG
-2. Run `npx drift compare --design <saved-image-path> --format json`
+2. Run `npx driftx compare --design <saved-image-path> --format json`
 3. Read the JSON output to understand differences
 4. Read artifact files (diff mask, report.md) for visual context
 5. Suggest code fixes based on the findings
@@ -195,12 +195,12 @@ If no Figma MCP, ask the user to provide the design image path.
 ### Accessibility audit
 
 ```bash
-npx drift compare --design <path> --with a11y --format json
+npx driftx compare --design <path> --with a11y --format json
 ```
 
 Or without a design image (a11y only needs the component tree):
 ```bash
-npx drift compare --baseline --with a11y --format json
+npx driftx compare --baseline --with a11y --format json
 ```
 
 Review findings with `category: 'accessibility'` and suggest fixes (add accessibilityLabel, increase tap target size, etc.).
@@ -208,7 +208,7 @@ Review findings with `category: 'accessibility'` and suggest fixes (add accessib
 ### Regression detection
 
 ```bash
-npx drift compare --baseline --format json
+npx driftx compare --baseline --format json
 ```
 
 Compares current app state against the most recent previous run. No design file needed. Useful after code changes to verify nothing broke visually.
@@ -216,73 +216,73 @@ Compares current app state against the most recent previous run. No design file 
 ### Full audit (all analyses)
 
 ```bash
-npx drift compare --design <path> --with pixel,a11y --format json
+npx driftx compare --design <path> --with pixel,a11y --format json
 ```
 
 Runs pixel diff and accessibility audit together.
 
 ## Device Interaction
 
-drift can interact with the running app — tap buttons, type text, swipe, navigate.
+driftx can interact with the running app — tap buttons, type text, swipe, navigate.
 
-### `drift tap <target>` — Tap a component
+### `driftx tap <target>` — Tap a component
 
 ```bash
-npx drift tap login-btn
-npx drift tap LoginButton
-npx drift tap "Submit"
-npx drift tap 150,300 --xy
-npx drift tap login-btn --device "iPhone 16 Pro"
+npx driftx tap login-btn
+npx driftx tap LoginButton
+npx driftx tap "Submit"
+npx driftx tap 150,300 --xy
+npx driftx tap login-btn --device "iPhone 16 Pro"
 ```
 
 Returns JSON with interaction result.
 
-### `drift type <target> <text>` — Type text into a field
+### `driftx type <target> <text>` — Type text into a field
 
 ```bash
-npx drift type email-input "user@example.com"
+npx driftx type email-input "user@example.com"
 ```
 
 Taps the target first to focus it, then types.
 
-### `drift swipe <direction>` — Swipe gesture
+### `driftx swipe <direction>` — Swipe gesture
 
 ```bash
-npx drift swipe up
-npx drift swipe down
-npx drift swipe left
-npx drift swipe right
+npx driftx swipe up
+npx driftx swipe down
+npx driftx swipe left
+npx driftx swipe right
 ```
 
-### `drift go-back` — Press back button
+### `driftx go-back` — Press back button
 
 ```bash
-npx drift go-back
+npx driftx go-back
 ```
 
-### `drift open-url <url>` — Open a deep link
+### `driftx open-url <url>` — Open a deep link
 
 ```bash
-npx drift open-url "myapp://profile/123"
+npx driftx open-url "myapp://profile/123"
 ```
 
 ### Interaction Workflow
 
 1. Write/modify code
 2. Hot reload
-3. `npx drift tap "Login"` — navigate
-4. `npx drift compare --design mockup.png --format json` — verify
+3. `npx driftx tap "Login"` — navigate
+4. `npx driftx compare --design mockup.png --format json` — verify
 5. Fix issues and repeat
 
 For form testing:
-1. `npx drift type email-input "test@example.com"`
-2. `npx drift type password-input "password123"`
-3. `npx drift tap "Submit"`
-4. `npx drift compare --baseline --format json`
+1. `npx driftx type email-input "test@example.com"`
+2. `npx driftx type password-input "password123"`
+3. `npx driftx tap "Submit"`
+4. `npx driftx compare --baseline --format json`
 
 ## Configuration
 
-drift uses `.driftrc.json` in the project root. Run `npx drift init` to create one. Key settings:
+driftx uses `.driftxrc.json` in the project root. Run `npx driftx init` to create one. Key settings:
 
 - `platform`: `"android"` or `"ios"`
 - `metroPort`: Metro bundler port (default 8081)
@@ -295,5 +295,5 @@ drift uses `.driftrc.json` in the project root. Run `npx drift init` to create o
 
 - If no booted device is found, suggest the user start a simulator/emulator
 - If Metro is not running, suggest `npx react-native start`
-- If `drift doctor` shows missing prerequisites, show the user which tools to install
+- If `driftx doctor` shows missing prerequisites, show the user which tools to install
 - If compare fails with "Either --design or --baseline must be provided", one of those flags is required

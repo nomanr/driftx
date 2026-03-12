@@ -7,7 +7,7 @@ import * as os from 'node:os';
 
 describe('compare pipeline', () => {
   let tmpDir: string;
-  beforeAll(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'drift-compare-')); });
+  beforeAll(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'driftx-compare-')); });
   afterAll(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
   it('runs full pipeline on diff pair', async () => {

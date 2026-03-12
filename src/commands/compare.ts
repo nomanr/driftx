@@ -1,5 +1,5 @@
 import type { Shell, RunMetadata, DeviceInfo, InspectionCapabilities } from '../types.js';
-import type { DriftConfig } from '../config.js';
+import type { DriftxConfig } from '../config.js';
 import type { CompareFormatData } from '../formatters/types.js';
 import type { InspectResult } from '../inspect/tree-inspector.js';
 import type { CompareReport } from '../analyses/types.js';
@@ -10,7 +10,7 @@ import { RunStore } from '../run-store.js';
 import { ExitCode } from '../exit-codes.js';
 import { compareFormatter } from '../formatters/compare.js';
 import { pickDevice } from './device-picker.js';
-import { buildDriftImage, buildAnalysisConfig } from '../analyses/context.js';
+import { buildDriftxImage, buildAnalysisConfig } from '../analyses/context.js';
 import { createDefaultRegistry } from '../analyses/default-registry.js';
 import { AnalysisOrchestrator } from '../analyses/orchestrator.js';
 import * as fs from 'node:fs';
@@ -27,7 +27,7 @@ export interface CompareCommandOptions {
 
 export async function runCompare(
   shell: Shell,
-  config: DriftConfig,
+  config: DriftxConfig,
   options: CompareCommandOptions,
 ): Promise<{ report: CompareReport; exitCode: number; formatData: CompareFormatData }> {
   const store = new RunStore(process.cwd());
@@ -67,13 +67,13 @@ export async function runCompare(
     await store.writeArtifact(run.runId, 'screenshot.png', buffer);
   }
 
-  const screenshotImage = await buildDriftImage(screenshotPath);
+  const screenshotImage = await buildDriftxImage(screenshotPath);
 
   let designImage;
   if (options.design) {
     const designBuffer = fs.readFileSync(options.design);
     await store.writeArtifact(run.runId, 'design.png', designBuffer);
-    designImage = await buildDriftImage(options.design);
+    designImage = await buildDriftxImage(options.design);
   }
 
   let baselineImage;
@@ -82,7 +82,7 @@ export async function runCompare(
     if (latestRunId) {
       const baselinePath = store.getRunPath(latestRunId, 'screenshot.png');
       if (fs.existsSync(baselinePath)) {
-        baselineImage = await buildDriftImage(baselinePath);
+        baselineImage = await buildDriftxImage(baselinePath);
       }
     }
   }
@@ -130,7 +130,7 @@ export async function runCompare(
     platform,
     orientation: 'portrait',
     framework: 'unknown',
-    driftVersion: '0.1.0',
+    driftxVersion: '0.1.0',
     configHash: '',
   };
   report.metadata = metadata;

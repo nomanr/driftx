@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type {
-  DriftImage,
+  DriftxImage,
   AnalysisConfig,
   CompareContext,
   AnalysisResult,
@@ -9,8 +9,8 @@ import type {
 } from '../../../src/analyses/types.js';
 
 describe('Analysis types', () => {
-  it('DriftImage has required fields', () => {
-    const img: DriftImage = {
+  it('DriftxImage has required fields', () => {
+    const img: DriftxImage = {
       buffer: Buffer.from(''),
       rawPixels: Buffer.from(''),
       width: 100,

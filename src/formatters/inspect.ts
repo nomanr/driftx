@@ -84,7 +84,7 @@ export const inspectFormatter: OutputFormatter<InspectResult> = {
 
   markdown(result) {
     const lines: string[] = [
-      '# Drift Inspect Report',
+      '# Driftx Inspect Report',
       '',
       `**Device:** ${result.device.name} (${result.device.platform})`,
       `**Strategy:** ${STRATEGY_LABELS[result.strategy.method] ?? result.strategy.method}`,

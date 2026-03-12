@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { buildDriftImage, buildAnalysisConfig } from '../../../src/analyses/context.js';
+import { buildDriftxImage, buildAnalysisConfig } from '../../../src/analyses/context.js';
 import { PNG } from 'pngjs';
 import { writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-describe('buildDriftImage', () => {
-  it('creates DriftImage from file path', async () => {
-    const tmp = mkdtempSync(join(tmpdir(), 'drift-ctx-'));
+describe('buildDriftxImage', () => {
+  it('creates DriftxImage from file path', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'driftx-ctx-'));
     try {
       const png = new PNG({ width: 2, height: 3 });
       png.data.fill(255);
@@ -15,7 +15,7 @@ describe('buildDriftImage', () => {
       const imgPath = join(tmp, 'test.png');
       writeFileSync(imgPath, buffer);
 
-      const img = await buildDriftImage(imgPath);
+      const img = await buildDriftxImage(imgPath);
       expect(img.width).toBe(2);
       expect(img.height).toBe(3);
       expect(img.aspectRatio).toBeCloseTo(2 / 3);

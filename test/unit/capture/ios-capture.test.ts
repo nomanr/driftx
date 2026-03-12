@@ -19,7 +19,7 @@ describe('captureIosScreenshot', () => {
   });
 
   it('returns PNG buffer from simctl screenshot', async () => {
-    const tmpPath = path.join(os.tmpdir(), `drift-ios-test-${Date.now()}.png`);
+    const tmpPath = path.join(os.tmpdir(), `driftx-ios-test-${Date.now()}.png`);
     tmpFiles.push(tmpPath);
 
     const shell = createMockShell({
@@ -39,7 +39,7 @@ describe('captureIosScreenshot', () => {
   });
 
   it('throws when screenshot file is not created', async () => {
-    const tmpPath = path.join(os.tmpdir(), `drift-ios-missing-${Date.now()}.png`);
+    const tmpPath = path.join(os.tmpdir(), `driftx-ios-missing-${Date.now()}.png`);
 
     const shell = createMockShell({
       'simctl io': { stdout: '', stderr: '' },
@@ -49,7 +49,7 @@ describe('captureIosScreenshot', () => {
   });
 
   it('throws when screenshot file is empty', async () => {
-    const tmpPath = path.join(os.tmpdir(), `drift-ios-empty-${Date.now()}.png`);
+    const tmpPath = path.join(os.tmpdir(), `driftx-ios-empty-${Date.now()}.png`);
     tmpFiles.push(tmpPath);
 
     const shell = createMockShell({

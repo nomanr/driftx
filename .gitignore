@@ -1,6 +1,7 @@
 node_modules/
 dist/
-.drift/
+.driftx/
+.orphaned_at
 coverage/
 *.tsbuildinfo
 docs/superpowers/

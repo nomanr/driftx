@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createDefaultRegistry } from '../../../src/analyses/default-registry.js';
 import { AnalysisOrchestrator } from '../../../src/analyses/orchestrator.js';
-import { buildDriftImage } from '../../../src/analyses/context.js';
+import { buildDriftxImage } from '../../../src/analyses/context.js';
 import { RunStore } from '../../../src/run-store.js';
 import { getDefaultConfig } from '../../../src/config.js';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
@@ -25,7 +25,7 @@ function createTestPng(width: number, height: number, color: [number, number, nu
 
 describe('Analysis orchestrator integration', () => {
   it('runs pixel analysis through full pipeline', async () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'drift-integ-'));
+    const tmpDir = mkdtempSync(join(tmpdir(), 'driftx-integ-'));
     try {
       const designPath = join(tmpDir, 'design.png');
       const screenshotPath = join(tmpDir, 'screenshot.png');
@@ -41,8 +41,8 @@ describe('Analysis orchestrator integration', () => {
       const config = getDefaultConfig();
 
       const ctx = {
-        screenshot: await buildDriftImage(screenshotPath),
-        design: await buildDriftImage(designPath),
+        screenshot: await buildDriftxImage(screenshotPath),
+        design: await buildDriftxImage(designPath),
         config,
         analysisConfig: { enabled: [], disabled: [], options: {} },
         runId: run.runId,
@@ -61,7 +61,7 @@ describe('Analysis orchestrator integration', () => {
   });
 
   it('skips pixel analysis when no design provided', async () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'drift-integ-'));
+    const tmpDir = mkdtempSync(join(tmpdir(), 'driftx-integ-'));
     try {
       const screenshotPath = join(tmpDir, 'screenshot.png');
       writeFileSync(screenshotPath, createTestPng(100, 200, [255, 0, 0, 255]));
@@ -72,7 +72,7 @@ describe('Analysis orchestrator integration', () => {
       const run = store.createRun();
 
       const ctx = {
-        screenshot: await buildDriftImage(screenshotPath),
+        screenshot: await buildDriftxImage(screenshotPath),
         config: getDefaultConfig(),
         analysisConfig: { enabled: [], disabled: [], options: {} },
         runId: run.runId,

@@ -15,7 +15,7 @@ export class StrategyCache {
   private entries: Map<string, CachedEntry>;
 
   constructor(projectRoot: string, ttlMs: number = 60_000) {
-    this.filePath = path.join(projectRoot, '.drift', 'strategy-cache.json');
+    this.filePath = path.join(projectRoot, '.driftx', 'strategy-cache.json');
     this.ttlMs = ttlMs;
     this.entries = this.load();
   }

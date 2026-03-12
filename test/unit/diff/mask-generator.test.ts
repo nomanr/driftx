@@ -11,7 +11,7 @@ import * as os from 'node:os';
 
 describe('generateDiffMask', () => {
   let tmpDir: string;
-  beforeAll(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'drift-mask-')); });
+  beforeAll(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'driftx-mask-')); });
   afterAll(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
   it('produces a valid PNG overlay', async () => {

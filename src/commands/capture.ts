@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { Shell, DeviceInfo } from '../types.js';
 import { DEFAULT_RETRY_POLICY } from '../types.js';
-import type { DriftConfig } from '../config.js';
+import type { DriftxConfig } from '../config.js';
 import { DeviceDiscovery } from '../devices/discovery.js';
 import { captureScreenshot } from '../capture/capture.js';
 import { RunStore } from '../run-store.js';
@@ -17,7 +17,7 @@ export interface CaptureCommandOptions {
 
 export async function runCapture(
   shell: Shell,
-  config: DriftConfig,
+  config: DriftxConfig,
   options: CaptureCommandOptions,
 ): Promise<{ path: string; runId: string }> {
   const discovery = new DeviceDiscovery(shell);
@@ -70,7 +70,7 @@ export async function runCapture(
     orientation: 'portrait',
     framework: 'unknown',
     projectRoot,
-    driftVersion: '0.1.0',
+    driftxVersion: '0.1.0',
   });
 
   return { path: store.getRunPath(run.runId, 'screenshot.png'), runId: run.runId };

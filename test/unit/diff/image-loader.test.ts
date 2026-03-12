@@ -9,7 +9,7 @@ describe('loadImage', () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'drift-img-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'driftx-img-test-'));
   });
 
   afterEach(() => {

@@ -33,9 +33,9 @@ export const devicesFormatter: OutputFormatter<DeviceInfo[]> = {
 
   markdown(devices) {
     if (devices.length === 0) {
-      return '# Drift Devices\n\nNo devices found. Start an emulator or connect a device.';
+      return '# Driftx Devices\n\nNo devices found. Start an emulator or connect a device.';
     }
-    const lines: string[] = ['# Drift Devices', '', '| ID | Name | Platform | OS | State |', '|----|------|----------|-----|-------|'];
+    const lines: string[] = ['# Driftx Devices', '', '| ID | Name | Platform | OS | State |', '|----|------|----------|-----|-------|'];
     for (const d of devices) {
       lines.push(`| ${d.id} | ${d.name} | ${d.platform} | ${d.osVersion || '-'} | ${stateText(d.state)} |`);
     }

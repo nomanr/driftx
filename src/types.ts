@@ -87,7 +87,7 @@ export interface RunMetadata {
   orientation: 'portrait' | 'landscape';
   appId?: string;
   configHash: string;
-  driftVersion: string;
+  driftxVersion: string;
 }
 
 export interface PrerequisiteCheck {

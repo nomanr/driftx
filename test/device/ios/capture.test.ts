@@ -3,7 +3,7 @@ import { createShell } from '../../../src/shell.js';
 import { discoverIosDevices } from '../../../src/devices/ios-discovery.js';
 import { captureIosScreenshot } from '../../../src/capture/ios-capture.js';
 
-const SKIP = !process.env.DRIFT_DEVICE_TESTS;
+const SKIP = !process.env.DRIFTX_DEVICE_TESTS;
 
 describe.skipIf(SKIP)('@device iOS capture', () => {
   it('discovers at least one iOS simulator', async () => {

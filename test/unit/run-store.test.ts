@@ -9,7 +9,7 @@ describe('RunStore', () => {
   let store: RunStore;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'drift-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'driftx-test-'));
     store = new RunStore(tmpDir);
   });
 

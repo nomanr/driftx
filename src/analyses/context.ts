@@ -1,8 +1,8 @@
 import sharp from 'sharp';
 import { readFileSync } from 'node:fs';
-import type { DriftImage, AnalysisConfig } from './types.js';
+import type { DriftxImage, AnalysisConfig } from './types.js';
 
-export async function buildDriftImage(filePath: string): Promise<DriftImage> {
+export async function buildDriftxImage(filePath: string): Promise<DriftxImage> {
   const buffer = readFileSync(filePath);
   const image = sharp(buffer);
   const metadata = await image.metadata();

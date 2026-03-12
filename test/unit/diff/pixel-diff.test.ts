@@ -9,7 +9,7 @@ import * as os from 'node:os';
 
 describe('computePixelDiff', () => {
   let tmpDir: string;
-  beforeAll(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'drift-diff-')); });
+  beforeAll(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'driftx-diff-')); });
   afterAll(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
   it('returns zero diff for identical images', async () => {

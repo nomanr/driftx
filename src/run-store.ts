@@ -11,7 +11,7 @@ export class RunStore {
   private baseDir: string;
 
   constructor(projectRoot: string) {
-    this.baseDir = path.join(projectRoot, '.drift', 'runs');
+    this.baseDir = path.join(projectRoot, '.driftx', 'runs');
   }
 
   createRun(): RunHandle {

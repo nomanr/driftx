@@ -10,13 +10,13 @@ import { runComparison } from '../../../../src/diff/compare.js';
 
 const mockRunComparison = vi.mocked(runComparison);
 
-function makeDriftImage(path: string) {
+function makeDriftxImage(path: string) {
   return { buffer: Buffer.from(''), rawPixels: Buffer.from(''), width: 100, height: 200, aspectRatio: 0.5, path };
 }
 
 function makeContext(overrides: Partial<CompareContext> = {}): CompareContext {
   return {
-    screenshot: makeDriftImage('/tmp/screenshot.png'),
+    screenshot: makeDriftxImage('/tmp/screenshot.png'),
     config: {
       threshold: 0.1,
       diffThreshold: 0.01,
@@ -67,7 +67,7 @@ describe('RegressionAnalysis', () => {
   });
 
   it('is available when baseline exists', () => {
-    const ctx = makeContext({ baseline: makeDriftImage('/tmp/baseline.png') });
+    const ctx = makeContext({ baseline: makeDriftxImage('/tmp/baseline.png') });
     expect(regression.isAvailable(ctx)).toBe(true);
   });
 
@@ -94,7 +94,7 @@ describe('RegressionAnalysis', () => {
       regionCrops,
     }) as any);
 
-    const ctx = makeContext({ baseline: makeDriftImage('/tmp/baseline.png') });
+    const ctx = makeContext({ baseline: makeDriftxImage('/tmp/baseline.png') });
     const result = await regression.run(ctx);
 
     expect(mockRunComparison).toHaveBeenCalledWith(
@@ -131,7 +131,7 @@ describe('RegressionAnalysis', () => {
     }) as any);
 
     const ctx = makeContext({
-      baseline: makeDriftImage('/tmp/baseline.png'),
+      baseline: makeDriftxImage('/tmp/baseline.png'),
       analysisConfig: { enabled: [], disabled: [], options: { regression: { regressionThreshold: 5.0 } } },
     });
     const result = await regression.run(ctx);
@@ -144,7 +144,7 @@ describe('RegressionAnalysis', () => {
       diffPercentage: 0.005,
     }) as any);
 
-    const ctx = makeContext({ baseline: makeDriftImage('/tmp/baseline.png') });
+    const ctx = makeContext({ baseline: makeDriftxImage('/tmp/baseline.png') });
     const result = await regression.run(ctx);
 
     expect(result.metadata.passed).toBe(true);

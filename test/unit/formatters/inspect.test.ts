@@ -51,7 +51,7 @@ describe('inspectFormatter', () => {
   describe('markdown', () => {
     it('renders full markdown report', () => {
       const output = inspectFormatter.markdown(result);
-      expect(output).toContain('# Drift Inspect Report');
+      expect(output).toContain('# Driftx Inspect Report');
       expect(output).toContain('Pixel_8');
       expect(output).toContain('## Component Tree');
       expect(output).toContain('## Capabilities');

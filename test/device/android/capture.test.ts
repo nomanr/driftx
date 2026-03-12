@@ -3,7 +3,7 @@ import { createShell } from '../../../src/shell.js';
 import { discoverAndroidDevices } from '../../../src/devices/android-discovery.js';
 import { captureAndroidScreenshot } from '../../../src/capture/android-capture.js';
 
-const SKIP = !process.env.DRIFT_DEVICE_TESTS;
+const SKIP = !process.env.DRIFTX_DEVICE_TESTS;
 
 describe.skipIf(SKIP)('@device Android capture', () => {
   it('discovers at least one Android device', async () => {

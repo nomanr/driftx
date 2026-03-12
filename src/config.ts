@@ -71,7 +71,7 @@ export const configSchema = z.object({
   analyses: analysesSchema,
 });
 
-export type DriftConfig = {
+export type DriftxConfig = {
   threshold: number;
   diffThreshold: number;
   settleTimeMs: number;
@@ -101,7 +101,7 @@ export type DriftConfig = {
   };
 };
 
-const DEFAULTS: DriftConfig = {
+const DEFAULTS: DriftxConfig = {
   threshold: 0.1,
   diffThreshold: 0.01,
   settleTimeMs: 300,
@@ -131,11 +131,11 @@ const DEFAULTS: DriftConfig = {
   },
 };
 
-export function getDefaultConfig(): DriftConfig {
+export function getDefaultConfig(): DriftxConfig {
   return structuredClone(DEFAULTS);
 }
 
-export function parseConfig(raw: unknown): DriftConfig {
+export function parseConfig(raw: unknown): DriftxConfig {
   const parsed = configSchema.parse(raw);
   const defaults = getDefaultConfig();
 
@@ -153,9 +153,9 @@ export function parseConfig(raw: unknown): DriftConfig {
   };
 }
 
-const explorer = cosmiconfig('drift');
+const explorer = cosmiconfig('driftx');
 
-export async function loadConfig(searchFrom?: string): Promise<DriftConfig> {
+export async function loadConfig(searchFrom?: string): Promise<DriftxConfig> {
   const result = await explorer.search(searchFrom);
   if (!result || result.isEmpty) {
     return getDefaultConfig();

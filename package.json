@@ -1,10 +1,10 @@
 {
-  "name": "drift",
+  "name": "driftx",
   "version": "0.1.0",
   "description": "Visual diff tool for React Native and Android development",
   "type": "module",
   "bin": {
-    "drift": "./dist/bin.js"
+    "driftx": "./dist/bin.js"
   },
   "scripts": {
     "build": "tsup",
@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:device": "DRIFT_DEVICE_TESTS=1 vitest run test/device/",
+    "test:device": "DRIFTX_DEVICE_TESTS=1 vitest run test/device/",
     "lint": "tsc --noEmit"
   },
   "keywords": [

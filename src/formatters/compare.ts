@@ -108,7 +108,7 @@ export const compareFormatter: OutputFormatter<CompareFormatData> = {
   markdown(data) {
     const { report, device, artifactDir } = data;
     const pm = getPixelMeta(report.analyses);
-    const lines: string[] = ['# Drift Compare Report', ''];
+    const lines: string[] = ['# Driftx Compare Report', ''];
 
     if (device) lines.push(`**Device:** ${device.name} (${device.platform})`);
     const meta = report.metadata;

@@ -10,7 +10,7 @@ describe('alignImages', () => {
   let tmpDir: string;
 
   beforeAll(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'drift-align-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'driftx-align-'));
   });
 
   afterAll(() => {

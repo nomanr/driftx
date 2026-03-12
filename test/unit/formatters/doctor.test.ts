@@ -27,7 +27,7 @@ describe('doctorFormatter', () => {
   describe('markdown', () => {
     it('renders markdown table with fix column', () => {
       const output = doctorFormatter.markdown(checks);
-      expect(output).toContain('# Drift Doctor');
+      expect(output).toContain('# Driftx Doctor');
       expect(output).toContain('| node');
       expect(output).toContain('available');
       expect(output).toContain('unavailable');

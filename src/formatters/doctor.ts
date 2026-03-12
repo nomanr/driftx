@@ -22,7 +22,7 @@ export const doctorFormatter: OutputFormatter<PrerequisiteCheck[]> = {
   },
 
   markdown(checks) {
-    const lines: string[] = ['# Drift Doctor', '', '| Tool | Status | Version | Required | Fix |', '|------|--------|---------|----------|-----|'];
+    const lines: string[] = ['# Driftx Doctor', '', '| Tool | Status | Version | Required | Fix |', '|------|--------|---------|----------|-----|'];
     for (const check of checks) {
       const status = check.available ? 'available' : 'unavailable';
       const version = check.version || '—';

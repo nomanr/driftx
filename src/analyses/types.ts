@@ -6,10 +6,10 @@ import type {
   DeviceInfo,
   InspectionCapabilities,
 } from '../types.js';
-import type { DriftConfig } from '../config.js';
+import type { DriftxConfig } from '../config.js';
 import type { RunStore } from '../run-store.js';
 
-export interface DriftImage {
+export interface DriftxImage {
   buffer: Buffer;
   rawPixels: Buffer;
   width: number;
@@ -25,12 +25,12 @@ export interface AnalysisConfig {
 }
 
 export interface CompareContext {
-  screenshot: DriftImage;
-  design?: DriftImage;
-  baseline?: DriftImage;
+  screenshot: DriftxImage;
+  design?: DriftxImage;
+  baseline?: DriftxImage;
   tree?: ComponentNode[];
   device?: DeviceInfo;
-  config: DriftConfig;
+  config: DriftxConfig;
   analysisConfig: AnalysisConfig;
   runId: string;
   store: RunStore;

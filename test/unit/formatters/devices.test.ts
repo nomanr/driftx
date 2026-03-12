@@ -25,7 +25,7 @@ describe('devicesFormatter', () => {
   describe('markdown', () => {
     it('renders markdown table', () => {
       const output = devicesFormatter.markdown(devices);
-      expect(output).toContain('# Drift Devices');
+      expect(output).toContain('# Driftx Devices');
       expect(output).toContain('| emulator-5554');
       expect(output).toContain('| ABC-DEF-123');
     });

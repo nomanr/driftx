@@ -38,7 +38,7 @@ function getFormatterContext(opts: Record<string, unknown>): FormatterContext {
 export function createProgram(): Command {
   const program = new Command();
   program
-    .name('drift')
+    .name('driftx')
     .description('Visual diff tool for React Native and Android development')
     .version(pkg.version)
     .option('--verbose', 'enable debug logging')
@@ -54,7 +54,7 @@ export function createProgram(): Command {
 
   program
     .command('doctor')
-    .description('Check system prerequisites for drift')
+    .description('Check system prerequisites for driftx')
     .action(async function(this: Command) {
       const shell = new RealShell();
       const config = await loadConfig();
@@ -66,7 +66,7 @@ export function createProgram(): Command {
 
   program
     .command('init')
-    .description('Initialize drift configuration for this project')
+    .description('Initialize driftx configuration for this project')
     .action(async () => {
       const cwd = process.cwd();
       const files = readdirSync(cwd);
@@ -78,7 +78,7 @@ export function createProgram(): Command {
       }
       const framework = detectFramework(files, packageJson);
       const config = generateConfig(framework);
-      const configPath = join(cwd, '.driftrc.json');
+      const configPath = join(cwd, '.driftxrc.json');
       writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
       console.log(`Created ${configPath} (framework: ${framework})`);
     });
@@ -325,51 +325,51 @@ export function createProgram(): Command {
 
   program
     .command('setup-claude')
-    .description('Register drift as a Claude Code plugin')
+    .description('Register driftx as a Claude Code plugin')
     .action(() => {
       const claudeDir = join(homedir(), '.claude');
       const pluginsDir = join(claudeDir, 'plugins');
-      const driftPluginDir = join(pluginsDir, 'drift');
+      const driftxPluginDir = join(pluginsDir, 'driftx');
       const registryPath = join(pluginsDir, 'installed_plugins.json');
 
       const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-      const skillSource = join(packageRoot, 'drift-plugin');
+      const skillSource = join(packageRoot, 'driftx-plugin');
 
       if (!existsSync(skillSource)) {
-        console.error(`drift-plugin directory not found at ${skillSource}`);
+        console.error(`driftx-plugin directory not found at ${skillSource}`);
         process.exitCode = 1;
         return;
       }
 
       mkdirSync(pluginsDir, { recursive: true });
 
-      if (existsSync(driftPluginDir)) {
-        try { unlinkSync(driftPluginDir); } catch {
-          console.error(`Could not remove existing ${driftPluginDir}. Remove it manually and retry.`);
+      if (existsSync(driftxPluginDir)) {
+        try { unlinkSync(driftxPluginDir); } catch {
+          console.error(`Could not remove existing ${driftxPluginDir}. Remove it manually and retry.`);
           process.exitCode = 1;
           return;
         }
       }
-      symlinkSync(skillSource, driftPluginDir);
+      symlinkSync(skillSource, driftxPluginDir);
 
       let registry: { version: number; plugins: Record<string, unknown[]> } = { version: 2, plugins: {} };
       try {
         registry = JSON.parse(readFileSync(registryPath, 'utf-8'));
       } catch {}
 
-      registry.plugins['drift@local'] = [{
+      registry.plugins['driftx@local'] = [{
         scope: 'user',
-        installPath: driftPluginDir,
+        installPath: driftxPluginDir,
         version: pkg.version,
         installedAt: new Date().toISOString(),
         lastUpdated: new Date().toISOString(),
       }];
 
       writeFileSync(registryPath, JSON.stringify(registry, null, 2));
-      console.log('drift registered as Claude Code plugin.');
-      console.log(`  Symlink: ${driftPluginDir} -> ${skillSource}`);
+      console.log('driftx registered as Claude Code plugin.');
+      console.log(`  Symlink: ${driftxPluginDir} -> ${skillSource}`);
       console.log(`  Registry: ${registryPath}`);
-      console.log('\nRestart Claude Code to pick up the drift skill.');
+      console.log('\nRestart Claude Code to pick up the driftx skill.');
     });
 
   return program;

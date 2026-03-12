@@ -3,14 +3,14 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import type { Shell } from '../types.js';
 
-const DEVICE_TMP_PATH = '/sdcard/drift-tmp.png';
+const DEVICE_TMP_PATH = '/sdcard/driftx-tmp.png';
 
 export async function captureAndroidScreenshot(
   shell: Shell,
   deviceId: string,
   timeout?: number,
 ): Promise<Buffer> {
-  const localTmp = path.join(os.tmpdir(), `drift-android-${Date.now()}-${deviceId}.png`);
+  const localTmp = path.join(os.tmpdir(), `driftx-android-${Date.now()}-${deviceId}.png`);
 
   try {
     await shell.exec(

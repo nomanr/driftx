@@ -10,8 +10,8 @@ describe('captureAndroidScreenshot', () => {
   it('returns PNG buffer via adb screencap and pull', async () => {
     const shell = createMockShell({
       'shell screencap': { stdout: '', stderr: '' },
-      'pull /sdcard/drift-tmp.png': (fullCmd: string) => {
-        const parts = fullCmd.split('/sdcard/drift-tmp.png ');
+      'pull /sdcard/driftx-tmp.png': (fullCmd: string) => {
+        const parts = fullCmd.split('/sdcard/driftx-tmp.png ');
         const localPath = parts[1];
         fs.writeFileSync(localPath, FAKE_PNG);
         return { stdout: `1 file pulled`, stderr: '' };
@@ -29,8 +29,8 @@ describe('captureAndroidScreenshot', () => {
   it('throws when pulled file is empty', async () => {
     const shell = createMockShell({
       'shell screencap': { stdout: '', stderr: '' },
-      'pull /sdcard/drift-tmp.png': (fullCmd: string) => {
-        const parts = fullCmd.split('/sdcard/drift-tmp.png ');
+      'pull /sdcard/driftx-tmp.png': (fullCmd: string) => {
+        const parts = fullCmd.split('/sdcard/driftx-tmp.png ');
         const localPath = parts[1];
         fs.writeFileSync(localPath, Buffer.alloc(0));
         return { stdout: '1 file pulled', stderr: '' };
@@ -55,7 +55,7 @@ describe('captureAndroidScreenshot', () => {
   it('cleans up device temp file even on failure', async () => {
     const shell = createMockShell({
       'shell screencap': { stdout: '', stderr: '' },
-      'pull /sdcard/drift-tmp.png': () => {
+      'pull /sdcard/driftx-tmp.png': () => {
         throw new Error('pull failed');
       },
       'shell rm': { stdout: '', stderr: '' },

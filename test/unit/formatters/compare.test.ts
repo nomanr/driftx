@@ -65,7 +65,7 @@ const baseReport: CompareReport = {
     platform: 'android',
     framework: 'react-native',
     orientation: 'portrait',
-    driftVersion: '0.1.0',
+    driftxVersion: '0.1.0',
     configHash: '',
   },
   durationMs: 412,
@@ -74,7 +74,7 @@ const baseReport: CompareReport = {
 const formatData: CompareFormatData = {
   report: baseReport,
   device: { name: 'Pixel_8', platform: 'android' },
-  artifactDir: '.drift/runs/abc123',
+  artifactDir: '.driftx/runs/abc123',
 };
 
 const emptyReport: CompareReport = {
@@ -101,7 +101,7 @@ const emptyReport: CompareReport = {
 const emptyData: CompareFormatData = {
   report: emptyReport,
   device: { name: 'Pixel_8', platform: 'android' },
-  artifactDir: '.drift/runs/abc123',
+  artifactDir: '.driftx/runs/abc123',
 };
 
 describe('compareFormatter', () => {
@@ -142,17 +142,17 @@ describe('compareFormatter', () => {
   describe('markdown', () => {
     it('renders full report', () => {
       const output = compareFormatter.markdown(formatData);
-      expect(output).toContain('# Drift Compare Report');
+      expect(output).toContain('# Driftx Compare Report');
       expect(output).toContain('Pixel_8');
       expect(output).toContain('## Findings');
       expect(output).toContain('SubmitButton');
-      expect(output).toContain('.drift/runs/abc123/diff-mask.png');
+      expect(output).toContain('.driftx/runs/abc123/diff-mask.png');
     });
 
     it('includes artifact paths', () => {
       const output = compareFormatter.markdown(formatData);
-      expect(output).toContain('.drift/runs/abc123/screenshot.png');
-      expect(output).toContain('.drift/runs/abc123/regions/r-0.png');
+      expect(output).toContain('.driftx/runs/abc123/screenshot.png');
+      expect(output).toContain('.driftx/runs/abc123/regions/r-0.png');
     });
 
     it('includes git info when available', () => {
@@ -181,7 +181,7 @@ describe('compareFormatter', () => {
       const parsed = JSON.parse(output);
       expect(parsed.report.runId).toBe('abc123');
       expect(parsed.device.name).toBe('Pixel_8');
-      expect(parsed.artifactDir).toBe('.drift/runs/abc123');
+      expect(parsed.artifactDir).toBe('.driftx/runs/abc123');
     });
   });
 });

@@ -8,7 +8,7 @@ export async function captureIosScreenshot(
   deviceId: string,
   tmpPath?: string,
 ): Promise<Buffer> {
-  const screenshotPath = tmpPath ?? path.join(os.tmpdir(), `drift-ios-${Date.now()}.png`);
+  const screenshotPath = tmpPath ?? path.join(os.tmpdir(), `driftx-ios-${Date.now()}.png`);
   await shell.exec('xcrun', ['simctl', 'io', deviceId, 'screenshot', screenshotPath]);
 
   if (!fs.existsSync(screenshotPath)) {
