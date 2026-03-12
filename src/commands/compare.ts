@@ -10,6 +10,7 @@ import { matchRegionsToComponents } from '../inspect/component-matcher.js';
 import { generateFindings } from '../inspect/finding-generator.js';
 import { RunStore } from '../run-store.js';
 import { ExitCode } from '../exit-codes.js';
+import { compareFormatter } from '../formatters/compare.js';
 import { pickDevice } from './device-picker.js';
 import * as fs from 'node:fs';
 
@@ -147,6 +148,9 @@ export async function runCompare(
     tree: inspectResult?.tree,
     inspectHints: inspectResult?.hints,
   };
+
+  const reportMarkdown = compareFormatter.markdown(formatData);
+  await store.writeArtifact(run.runId, 'report.md', Buffer.from(reportMarkdown));
 
   return { result: diffResult, exitCode, formatData };
 }
