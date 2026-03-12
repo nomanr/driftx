@@ -44,6 +44,12 @@ const viewportSchema = z.object({
   navigationBarHeight: z.number().int().nonnegative().optional(),
 });
 
+const analysesSchema = z.object({
+  default: z.array(z.string()).optional(),
+  disabled: z.array(z.string()).optional(),
+  options: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
+}).optional();
+
 export const configSchema = z.object({
   threshold: z.number().min(0).max(1).optional(),
   diffThreshold: z.number().min(0).max(1).optional(),
@@ -62,6 +68,7 @@ export const configSchema = z.object({
   regionMergeGap: z.number().int().nonnegative().optional(),
   regionMinArea: z.number().int().nonnegative().optional(),
   diffMaskColor: z.tuple([z.number(), z.number(), z.number(), z.number()]).optional(),
+  analyses: analysesSchema,
 });
 
 export type DriftConfig = {
@@ -87,6 +94,11 @@ export type DriftConfig = {
   regionMergeGap: number;
   regionMinArea: number;
   diffMaskColor: [number, number, number, number];
+  analyses: {
+    default: string[];
+    disabled: string[];
+    options: Record<string, Record<string, unknown>>;
+  };
 };
 
 const DEFAULTS: DriftConfig = {
@@ -112,6 +124,11 @@ const DEFAULTS: DriftConfig = {
   regionMergeGap: 8,
   regionMinArea: 100,
   diffMaskColor: [255, 0, 0, 128],
+  analyses: {
+    default: [],
+    disabled: [],
+    options: {},
+  },
 };
 
 export function getDefaultConfig(): DriftConfig {
@@ -128,6 +145,11 @@ export function parseConfig(raw: unknown): DriftConfig {
     viewport: { ...defaults.viewport, ...parsed.viewport },
     timeouts: { ...defaults.timeouts, ...parsed.timeouts },
     retry: { ...defaults.retry, ...parsed.retry },
+    analyses: {
+      default: parsed.analyses?.default ?? DEFAULTS.analyses.default,
+      disabled: parsed.analyses?.disabled ?? DEFAULTS.analyses.disabled,
+      options: { ...DEFAULTS.analyses.options, ...parsed.analyses?.options },
+    },
   };
 }
 

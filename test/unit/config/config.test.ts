@@ -39,4 +39,24 @@ describe('config', () => {
     const result = configSchema.safeParse({ metroPort: '8081' });
     expect(result.success).toBe(false);
   });
+
+  it('parses analyses config section', () => {
+    const config = parseConfig({
+      analyses: {
+        default: ['pixel', 'a11y'],
+        options: {
+          pixel: { threshold: 0.2 },
+        },
+      },
+    });
+    expect(config.analyses.default).toEqual(['pixel', 'a11y']);
+    expect(config.analyses.options.pixel).toEqual({ threshold: 0.2 });
+  });
+
+  it('provides analyses defaults when not specified', () => {
+    const config = parseConfig({});
+    expect(config.analyses.default).toEqual([]);
+    expect(config.analyses.disabled).toEqual([]);
+    expect(config.analyses.options).toEqual({});
+  });
 });
