@@ -99,6 +99,23 @@ describe('AccessibilityAnalysis', () => {
     expect(imageFindings[0].category).toBe('accessibility');
   });
 
+  it('detects empty text nodes', async () => {
+    const tree = [
+      makeNode({ id: '1', name: 'Text', text: '', bounds: { x: 0, y: 0, width: 100, height: 20 } }),
+      makeNode({ id: '2', name: 'Text', text: 'Hello', bounds: { x: 0, y: 0, width: 100, height: 20 } }),
+    ];
+    const ctx = makeContext({ tree });
+    const result = await a11y.run(ctx);
+
+    const emptyFindings = result.findings.filter(f => f.id.startsWith('a11y-empty-'));
+    expect(emptyFindings.length).toBe(1);
+    expect(emptyFindings[0].severity).toBe('info');
+    expect(emptyFindings[0].category).toBe('accessibility');
+    expect(result.metadata).toMatchObject({
+      issuesByType: expect.objectContaining({ emptyText: 1 }),
+    });
+  });
+
   it('returns no findings for accessible tree', async () => {
     const tree = [
       makeNode({ id: '1', name: 'View', bounds: { x: 0, y: 0, width: 200, height: 200 } }),
