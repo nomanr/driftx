@@ -125,6 +125,20 @@ describe('RegressionAnalysis', () => {
     expect(ctx.store.writeArtifact).toHaveBeenCalledWith('test-run', 'regression-regions/r1.png', expect.any(Buffer));
   });
 
+  it('uses regressionThreshold override when provided', async () => {
+    mockRunComparison.mockResolvedValue(makeCompareResult({
+      diffPercentage: 3.4,
+    }) as any);
+
+    const ctx = makeContext({
+      baseline: makeDriftImage('/tmp/baseline.png'),
+      analysisConfig: { enabled: [], disabled: [], options: { regression: { regressionThreshold: 5.0 } } },
+    });
+    const result = await regression.run(ctx);
+
+    expect(result.metadata.passed).toBe(true);
+  });
+
   it('reports no changes when diff is within threshold', async () => {
     mockRunComparison.mockResolvedValue(makeCompareResult({
       diffPercentage: 0.005,
