@@ -13,7 +13,7 @@ import { formatDeviceTable } from './commands/devices.js';
 import { runCapture } from './commands/capture.js';
 import { runCompare, formatCompareOutput } from './commands/compare.js';
 import { TreeInspector } from './inspect/tree-inspector.js';
-import { formatTree, formatCapabilities } from './commands/inspect.js';
+import { formatTree, formatCapabilities, formatStrategy } from './commands/inspect.js';
 import { pickDevice } from './commands/device-picker.js';
 import { ExitCode } from './exit-codes.js';
 
@@ -147,21 +147,28 @@ export function createProgram(): Command {
       });
 
       if (opts.capabilities) {
+        console.log(formatStrategy(result));
         console.log(formatCapabilities(result.capabilities));
         return;
       }
 
       if (opts.json) {
-        console.log(JSON.stringify({ tree: result.tree, capabilities: result.capabilities }, null, 2));
+        console.log(JSON.stringify({
+          tree: result.tree,
+          capabilities: result.capabilities,
+          strategy: result.strategy,
+          device: result.device,
+        }, null, 2));
         return;
       }
+
+      console.log(formatStrategy(result));
 
       if (result.tree.length === 0) {
-        console.log('No component tree available. Try running with React DevTools enabled.');
+        console.log('  No component tree available. Try running with React DevTools enabled.');
         return;
       }
 
-      console.log('');
       console.log(formatTree(result.tree));
       console.log(formatCapabilities(result.capabilities));
     });

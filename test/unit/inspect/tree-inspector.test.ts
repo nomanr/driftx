@@ -34,9 +34,11 @@ describe('TreeInspector', () => {
     expect(result.tree.length).toBeGreaterThan(0);
     expect(result.capabilities.tree).toBe('basic');
     expect(result.capabilities.protocol).toBe('uiautomator');
+    expect(result.strategy.method).toBe('uiautomator');
+    expect(result.device.platform).toBe('android');
   });
 
-  it('returns iOS tree via Accessibility Inspector (Tier A)', async () => {
+  it('returns iOS tree via idb (Tier A)', async () => {
     const shell = createMockShell({
       'idb ui describe-all --udid ABC-DEF-123': {
         stdout: iosAccessibilityFixtures.simpleHierarchy,
@@ -47,7 +49,9 @@ describe('TreeInspector', () => {
     const result = await inspector.inspect(iosDevice, { metroPort: 0, devToolsPort: 0, timeoutMs: 100 });
     expect(result.tree.length).toBeGreaterThan(0);
     expect(result.capabilities.tree).toBe('basic');
-    expect(result.capabilities.protocol).toBe('accessibility');
+    expect(result.capabilities.protocol).toBe('idb');
+    expect(result.strategy.method).toBe('idb');
+    expect(result.device.platform).toBe('ios');
   });
 
   it('returns empty tree for iOS when accessibility fails', async () => {

@@ -3,10 +3,11 @@ import http from 'node:http';
 import type { ComponentNode, InspectionCapabilities } from '../types.js';
 import { getLogger } from '../logger.js';
 
-interface CdpTarget {
+export interface CdpTarget {
   id: string;
   title: string;
   description: string;
+  appId?: string;
   webSocketDebuggerUrl: string;
   deviceName?: string;
   reactNative?: {
@@ -92,7 +93,7 @@ export async function discoverTargets(metroPort: number): Promise<CdpTarget[]> {
   });
 }
 
-function findRuntimeTarget(targets: CdpTarget[], deviceName?: string): CdpTarget | undefined {
+export function findRuntimeTarget(targets: CdpTarget[], deviceName?: string): CdpTarget | undefined {
   const rnTargets = targets.filter((t) =>
     t.reactNative && t.description.includes('React Native'),
   );
