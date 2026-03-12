@@ -56,4 +56,31 @@ describe('RunStore', () => {
     const runs = store.listRuns();
     expect(runs).toHaveLength(2);
   });
+
+  it('readArtifact returns buffer for existing artifact', () => {
+    const run = store.createRun();
+    const data = Buffer.from('test-data');
+    store.writeArtifact(run.runId, 'screenshot.png', data);
+    const result = store.readArtifact(run.runId, 'screenshot.png');
+    expect(result).toEqual(data);
+  });
+
+  it('readArtifact returns null for missing artifact', () => {
+    const run = store.createRun();
+    const result = store.readArtifact(run.runId, 'nonexistent.png');
+    expect(result).toBeNull();
+  });
+
+  it('getLatestRun returns most recent run', () => {
+    const run1 = store.createRun();
+    const run2 = store.createRun();
+    const latest = store.getLatestRun();
+    expect(latest).toBeDefined();
+    expect([run1.runId, run2.runId]).toContain(latest);
+  });
+
+  it('getLatestRun returns undefined when no runs exist', () => {
+    const result = store.getLatestRun();
+    expect(result).toBeUndefined();
+  });
 });

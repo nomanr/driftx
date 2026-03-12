@@ -47,4 +47,32 @@ export class RunStore {
     const dir = this.getRunDir(runId);
     return relativePath ? path.join(dir, relativePath) : dir;
   }
+
+  readArtifact(runId: string, relativePath: string): Buffer | null {
+    const fullPath = path.join(this.getRunDir(runId), relativePath);
+    try {
+      return fs.readFileSync(fullPath);
+    } catch {
+      return null;
+    }
+  }
+
+  getLatestRun(): string | undefined {
+    const runs = this.listRuns();
+    if (runs.length === 0) return undefined;
+    let latest: string | undefined;
+    let latestTime = 0;
+    for (const runId of runs) {
+      try {
+        const stat = fs.statSync(this.getRunDir(runId));
+        if (stat.mtimeMs > latestTime) {
+          latestTime = stat.mtimeMs;
+          latest = runId;
+        }
+      } catch {
+        continue;
+      }
+    }
+    return latest;
+  }
 }
