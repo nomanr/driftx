@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { AnalysisOrchestrator } from '../../../src/analyses/orchestrator.js';
 import { AnalysisRegistry } from '../../../src/analyses/registry.js';
+import { createDefaultRegistry } from '../../../src/analyses/default-registry.js';
 import type { AnalysisPlugin, CompareContext, AnalysisResult } from '../../../src/analyses/types.js';
 
 function makePlugin(
@@ -121,5 +122,36 @@ describe('AnalysisOrchestrator', () => {
     const elapsed = Date.now() - start;
     expect(report.analyses).toHaveLength(2);
     expect(elapsed).toBeLessThan(90);
+  });
+});
+
+describe('createDefaultRegistry', () => {
+  it('includes pixel, a11y, and regression plugins', () => {
+    const registry = createDefaultRegistry();
+    const names = registry.all().map((p) => p.name);
+    expect(names).toContain('pixel');
+    expect(names).toContain('a11y');
+    expect(names).toContain('regression');
+    expect(names).toHaveLength(3);
+  });
+
+  it('smart defaults: only a11y runs when only tree is provided', async () => {
+    const registry = createDefaultRegistry();
+    const orchestrator = new AnalysisOrchestrator(registry);
+
+    const ctx = makeContext({
+      tree: [
+        {
+          id: 'node-1',
+          name: 'View',
+          bounds: { x: 0, y: 0, width: 100, height: 100 },
+          children: [],
+        } as any,
+      ],
+    });
+
+    const report = await orchestrator.run(ctx);
+    expect(report.analyses).toHaveLength(1);
+    expect(report.analyses[0].analysisName).toBe('a11y');
   });
 });

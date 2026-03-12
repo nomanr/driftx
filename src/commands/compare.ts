@@ -139,11 +139,11 @@ export async function runCompare(
   const resultJson = JSON.stringify(report, null, 2);
   await store.writeArtifact(run.runId, 'result.json', Buffer.from(resultJson));
 
-  const pixelMeta = report.analyses.find((a) => a.analysisName === 'pixel')?.metadata as Record<string, unknown> | undefined;
-  const diffPercentage = (pixelMeta?.diffPercentage as number) ?? 0;
-  const diffThreshold = options.threshold ?? config.diffThreshold;
-  const passed = diffPercentage <= diffThreshold;
-  const exitCode = passed ? ExitCode.Success : ExitCode.DiffFound;
+  const anyFailed = report.analyses.some((a) => {
+    const meta = a.metadata as Record<string, unknown>;
+    return meta.passed === false;
+  });
+  const exitCode = anyFailed ? ExitCode.DiffFound : ExitCode.Success;
 
   const formatData: CompareFormatData = {
     report,
