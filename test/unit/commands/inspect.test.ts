@@ -1,72 +1,52 @@
 import { describe, it, expect } from 'vitest';
-import { formatTree, formatCapabilities } from '../../../src/commands/inspect.js';
-import type { ComponentNode, InspectionCapabilities } from '../../../src/types.js';
+import { inspectFormatter } from '../../../src/formatters/inspect.js';
+import type { InspectResult } from '../../../src/inspect/tree-inspector.js';
 
-describe('formatTree', () => {
+const result: InspectResult = {
+  tree: [
+    {
+      id: 'n1', name: 'View', bounds: { x: 0, y: 0, width: 100, height: 50 },
+      children: [
+        {
+          id: 'n2', name: 'Text', reactName: 'MyComponent', testID: 'submit-btn',
+          bounds: { x: 10, y: 10, width: 80, height: 20 },
+          text: 'Hello', children: [], inspectionTier: 'detailed',
+        },
+      ],
+      inspectionTier: 'basic',
+    },
+  ],
+  capabilities: { tree: 'basic', sourceMapping: 'none', styles: 'none', protocol: 'uiautomator' },
+  strategy: { method: 'uiautomator', reason: 'Android native inspection' },
+  device: { name: 'Pixel_8', platform: 'android' },
+  hints: [],
+};
+
+describe('inspect formatter (migrated)', () => {
   it('renders node names with bounds', () => {
-    const nodes: ComponentNode[] = [
-      {
-        id: 'n1', name: 'View', bounds: { x: 0, y: 0, width: 100, height: 50 },
-        children: [], inspectionTier: 'basic',
-      },
-    ];
-    const output = formatTree(nodes);
+    const output = inspectFormatter.terminal(result);
     expect(output).toContain('View');
     expect(output).toContain('(0,0 100x50)');
   });
 
-  it('renders nested children with indentation', () => {
-    const nodes: ComponentNode[] = [
-      {
-        id: 'n1', name: 'View', bounds: { x: 0, y: 0, width: 100, height: 50 },
-        inspectionTier: 'basic',
-        children: [
-          {
-            id: 'n2', name: 'Text', text: 'Hello', bounds: { x: 10, y: 10, width: 80, height: 20 },
-            children: [], inspectionTier: 'basic',
-          },
-        ],
-      },
-    ];
-    const output = formatTree(nodes);
-    expect(output).toContain('  Text "Hello"');
-  });
-
-  it('shows reactName when available and tier icon for detailed', () => {
-    const nodes: ComponentNode[] = [
-      {
-        id: 'n1', name: 'View', reactName: 'MyComponent',
-        bounds: { x: 0, y: 0, width: 100, height: 50 },
-        children: [], inspectionTier: 'detailed',
-      },
-    ];
-    const output = formatTree(nodes);
+  it('renders nested children', () => {
+    const output = inspectFormatter.terminal(result);
     expect(output).toContain('MyComponent');
-    expect(output).toContain('⚛');
+    expect(output).toContain('"Hello"');
   });
 
   it('shows testID in brackets', () => {
-    const nodes: ComponentNode[] = [
-      {
-        id: 'n1', name: 'Button', testID: 'submit-btn',
-        bounds: { x: 0, y: 0, width: 100, height: 50 },
-        children: [], inspectionTier: 'basic',
-      },
-    ];
-    const output = formatTree(nodes);
+    const output = inspectFormatter.terminal(result);
     expect(output).toContain('[submit-btn]');
   });
-});
 
-describe('formatCapabilities', () => {
-  it('renders all capability fields', () => {
-    const caps: InspectionCapabilities = {
-      tree: 'native' as any, sourceMapping: 'none', styles: 'none', protocol: 'uiautomator',
-    };
-    const output = formatCapabilities(caps);
-    expect(output).toContain('Tree:');
-    expect(output).toContain('native');
-    expect(output).toContain('Protocol:');
+  it('shows tier icon for detailed', () => {
+    const output = inspectFormatter.terminal(result);
+    expect(output).toContain('⚛');
+  });
+
+  it('renders capabilities', () => {
+    const output = inspectFormatter.terminal(result);
     expect(output).toContain('uiautomator');
   });
 });

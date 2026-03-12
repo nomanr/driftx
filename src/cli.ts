@@ -6,19 +6,31 @@ import { RealShell } from './shell.js';
 import { loadConfig } from './config.js';
 import { createLogger, setLogger } from './logger.js';
 import { checkPrerequisites } from './prerequisites.js';
-import { formatPrerequisiteTable } from './commands/doctor.js';
+import { computeDoctorExitCode } from './commands/doctor.js';
 import { detectFramework, generateConfig } from './commands/init.js';
 import { DeviceDiscovery } from './devices/discovery.js';
-import { formatDeviceTable } from './commands/devices.js';
 import { runCapture } from './commands/capture.js';
-import { runCompare, formatCompareOutput } from './commands/compare.js';
+import { runCompare } from './commands/compare.js';
 import { TreeInspector } from './inspect/tree-inspector.js';
-import { formatTree, formatCapabilities, formatStrategy } from './commands/inspect.js';
 import { pickDevice } from './commands/device-picker.js';
 import { ExitCode } from './exit-codes.js';
+import { formatOutput } from './formatters/format.js';
+import { devicesFormatter } from './formatters/devices.js';
+import { doctorFormatter } from './formatters/doctor.js';
+import { inspectFormatter } from './formatters/inspect.js';
+import { compareFormatter } from './formatters/compare.js';
+import type { FormatterContext } from './formatters/types.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
+
+function getFormatterContext(opts: Record<string, unknown>): FormatterContext {
+  return {
+    format: (opts.format as FormatterContext['format']) ?? 'terminal',
+    copy: !!opts.copy,
+    quiet: !!opts.quiet,
+  };
+}
 
 export function createProgram(): Command {
   const program = new Command();
@@ -27,7 +39,9 @@ export function createProgram(): Command {
     .description('Visual diff tool for React Native and Android development')
     .version(pkg.version)
     .option('--verbose', 'enable debug logging')
-    .option('--quiet', 'suppress all output except errors');
+    .option('--quiet', 'suppress all output except errors')
+    .option('--format <type>', 'output format: terminal, markdown, json', 'terminal')
+    .option('--copy', 'copy output to clipboard');
 
   program.hook('preAction', (_thisCommand, actionCommand) => {
     const opts = actionCommand.optsWithGlobals();
@@ -38,13 +52,13 @@ export function createProgram(): Command {
   program
     .command('doctor')
     .description('Check system prerequisites for drift')
-    .action(async () => {
+    .action(async function(this: Command) {
       const shell = new RealShell();
       const config = await loadConfig();
       const checks = await checkPrerequisites(shell, config.metroPort);
-      const { table, exitCode } = formatPrerequisiteTable(checks);
-      console.log(table);
-      process.exitCode = exitCode;
+      const ctx = getFormatterContext(this.optsWithGlobals());
+      await formatOutput(doctorFormatter, checks, ctx);
+      process.exitCode = computeDoctorExitCode(checks);
     });
 
   program
@@ -69,11 +83,12 @@ export function createProgram(): Command {
   program
     .command('devices')
     .description('List connected devices and simulators')
-    .action(async () => {
+    .action(async function(this: Command) {
       const shell = new RealShell();
       const discovery = new DeviceDiscovery(shell);
       const devices = await discovery.list();
-      console.log(formatDeviceTable(devices));
+      const ctx = getFormatterContext(this.optsWithGlobals());
+      await formatOutput(devicesFormatter, devices, ctx);
     });
 
   program
@@ -104,16 +119,17 @@ export function createProgram(): Command {
     .option('-d, --device <id>', 'device ID or name')
     .option('--threshold <n>', 'diff percentage threshold', parseFloat)
     .option('--screenshot <path>', 'use existing screenshot instead of capturing')
-    .action(async (opts) => {
+    .action(async function(this: Command, opts: Record<string, unknown>) {
       const shell = new RealShell();
       const config = await loadConfig();
-      const { result, exitCode } = await runCompare(shell, config, {
-        design: opts.design,
-        device: opts.device,
-        threshold: opts.threshold,
-        screenshot: opts.screenshot,
+      const { exitCode, formatData } = await runCompare(shell, config, {
+        design: opts.design as string,
+        device: opts.device as string | undefined,
+        threshold: opts.threshold as number | undefined,
+        screenshot: opts.screenshot as string | undefined,
       });
-      console.log(formatCompareOutput(result));
+      const ctx = getFormatterContext(this.optsWithGlobals());
+      await formatOutput(compareFormatter, formatData, ctx);
       process.exitCode = exitCode;
     });
 
@@ -121,9 +137,9 @@ export function createProgram(): Command {
     .command('inspect')
     .description('Inspect component tree on device')
     .option('-d, --device <id>', 'device ID or name')
-    .option('--json', 'output as JSON')
+    .option('--json', 'output as JSON (alias for --format json)')
     .option('--capabilities', 'show inspection capabilities only')
-    .action(async (opts) => {
+    .action(async function(this: Command, opts: Record<string, unknown>) {
       const shell = new RealShell();
       const config = await loadConfig();
       const discovery = new DeviceDiscovery(shell);
@@ -139,38 +155,17 @@ export function createProgram(): Command {
         device = await pickDevice(booted);
       }
 
-      const inspector = new TreeInspector(shell);
+      const inspector = new TreeInspector(shell, process.cwd());
       const result = await inspector.inspect(device, {
         metroPort: config.metroPort,
         devToolsPort: config.devToolsPort,
         timeoutMs: config.timeouts.treeInspectionMs,
       });
 
-      if (opts.capabilities) {
-        console.log(formatStrategy(result));
-        console.log(formatCapabilities(result.capabilities));
-        return;
-      }
-
-      if (opts.json) {
-        console.log(JSON.stringify({
-          tree: result.tree,
-          capabilities: result.capabilities,
-          strategy: result.strategy,
-          device: result.device,
-        }, null, 2));
-        return;
-      }
-
-      console.log(formatStrategy(result));
-
-      if (result.tree.length === 0) {
-        console.log('  No component tree available. Try running with React DevTools enabled.');
-        return;
-      }
-
-      console.log(formatTree(result.tree));
-      console.log(formatCapabilities(result.capabilities));
+      const globalOpts = this.optsWithGlobals();
+      if (opts.json) globalOpts.format = 'json';
+      const ctx = getFormatterContext(globalOpts);
+      await formatOutput(inspectFormatter, result, ctx);
     });
 
   return program;

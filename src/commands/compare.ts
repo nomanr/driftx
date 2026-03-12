@@ -1,5 +1,7 @@
 import type { Shell, DiffResult, DiffFinding, RunMetadata, DeviceInfo, InspectionCapabilities } from '../types.js';
 import type { DriftConfig } from '../config.js';
+import type { CompareFormatData } from '../formatters/types.js';
+import type { InspectResult } from '../inspect/tree-inspector.js';
 import { DeviceDiscovery } from '../devices/discovery.js';
 import { captureScreenshot } from '../capture/capture.js';
 import { runComparison } from '../diff/compare.js';
@@ -22,7 +24,7 @@ export async function runCompare(
   shell: Shell,
   config: DriftConfig,
   options: CompareCommandOptions,
-): Promise<{ result: DiffResult; exitCode: number }> {
+): Promise<{ result: DiffResult; exitCode: number; formatData: CompareFormatData }> {
   const store = new RunStore(process.cwd());
   const run = store.createRun();
 
@@ -84,10 +86,11 @@ export async function runCompare(
   let inspectionCapabilities: InspectionCapabilities = {
     tree: 'none', sourceMapping: 'none', styles: 'none', protocol: 'none',
   };
+  let inspectResult: InspectResult | undefined;
 
   if (compareResult.regions.length > 0 && deviceInfo) {
-    const inspector = new TreeInspector(shell);
-    const inspectResult = await inspector.inspect(deviceInfo, {
+    const inspector = new TreeInspector(shell, process.cwd());
+    inspectResult = await inspector.inspect(deviceInfo, {
       metroPort: config.metroPort,
       devToolsPort: config.devToolsPort,
       timeoutMs: config.timeouts.treeInspectionMs,
@@ -137,30 +140,13 @@ export async function runCompare(
   const passed = compareResult.diffPercentage <= diffThreshold;
   const exitCode = passed ? ExitCode.Success : ExitCode.DiffFound;
 
-  return { result: diffResult, exitCode };
-}
+  const formatData: CompareFormatData = {
+    result: diffResult,
+    device: deviceInfo ? { name: deviceInfo.name, platform: deviceInfo.platform } : undefined,
+    artifactDir: store.getRunPath(run.runId),
+    tree: inspectResult?.tree,
+    inspectHints: inspectResult?.hints,
+  };
 
-export function formatCompareOutput(result: DiffResult): string {
-  const lines: string[] = [];
-  lines.push('');
-  lines.push(`  Diff: ${result.diffPercentage.toFixed(2)}% (${result.diffPixels}/${result.totalPixels} pixels)`);
-  lines.push(`  Regions: ${result.regions.length}`);
-  lines.push(`  Duration: ${result.durationMs}ms`);
-  lines.push('');
-
-  if (result.regions.length > 0) {
-    const header = `  ${'Region'.padEnd(12)} ${'X'.padEnd(6)} ${'Y'.padEnd(6)} ${'W'.padEnd(6)} ${'H'.padEnd(6)} ${'Pixels'.padEnd(10)} ${'%'}`;
-    lines.push(header);
-    lines.push('  ' + '-'.repeat(56));
-    for (const r of result.regions) {
-      lines.push(
-        `  ${r.id.padEnd(12)} ${String(r.bounds.x).padEnd(6)} ${String(r.bounds.y).padEnd(6)} ${String(r.bounds.width).padEnd(6)} ${String(r.bounds.height).padEnd(6)} ${String(r.pixelCount).padEnd(10)} ${r.percentage.toFixed(2)}`,
-      );
-    }
-    lines.push('');
-  }
-
-  lines.push(`  Run: ${result.runId}`);
-  lines.push('');
-  return lines.join('\n');
+  return { result: diffResult, exitCode, formatData };
 }
