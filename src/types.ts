@@ -166,6 +166,20 @@ export interface IgnoreRule {
   reason?: string;
 }
 
+export interface ComponentNode {
+  id: string;
+  name: string;
+  nativeName?: string;
+  reactName?: string;
+  testID?: string;
+  bounds: BoundingBox;
+  text?: string;
+  children: ComponentNode[];
+  source?: SourceResolution;
+  styles?: Record<string, string | number>;
+  inspectionTier: 'basic' | 'detailed';
+}
+
 export interface Shell {
   exec(
     cmd: string,
