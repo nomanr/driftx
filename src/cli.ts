@@ -13,7 +13,6 @@ import { runCapture } from './commands/capture.js';
 import { runCompare } from './commands/compare.js';
 import { TreeInspector } from './inspect/tree-inspector.js';
 import { pickDevice } from './commands/device-picker.js';
-import { ExitCode } from './exit-codes.js';
 import { formatOutput } from './formatters/format.js';
 import { devicesFormatter } from './formatters/devices.js';
 import { doctorFormatter } from './formatters/doctor.js';

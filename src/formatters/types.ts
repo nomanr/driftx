@@ -1,5 +1,4 @@
-import type { DiffResult, DeviceInfo, PrerequisiteCheck, ComponentNode } from '../types.js';
-import type { InspectResult } from '../inspect/tree-inspector.js';
+import type { DiffResult, ComponentNode } from '../types.js';
 
 export type OutputFormat = 'terminal' | 'markdown' | 'json';
 
