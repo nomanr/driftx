@@ -3,6 +3,7 @@ import { dumpUiAutomator } from './uiautomator.js';
 import { dumpIosAccessibility } from './ios-accessibility.js';
 import { CdpClient, discoverTargets, findRuntimeTarget } from './cdp-client.js';
 import type { CdpTarget } from './cdp-client.js';
+import { StrategyCache } from './strategy-cache.js';
 import { getLogger } from '../logger.js';
 
 export interface InspectOptions {
@@ -25,13 +26,25 @@ export interface InspectResult {
   capabilities: InspectionCapabilities;
   strategy: InspectionStrategy;
   device: { name: string; platform: 'android' | 'ios' };
+  hints: string[];
 }
 
 export class TreeInspector {
   private shell: Shell;
+  private fileCache: StrategyCache | null;
 
-  constructor(shell: Shell) {
+  constructor(shell: Shell, projectRoot?: string) {
     this.shell = shell;
+    this.fileCache = projectRoot ? new StrategyCache(projectRoot) : null;
+  }
+
+  invalidateCache(deviceId?: string): void {
+    if (!this.fileCache) return;
+    if (deviceId) {
+      this.fileCache.delete(deviceId);
+    } else {
+      this.fileCache.clear();
+    }
   }
 
   async resolveStrategy(device: DeviceInfo, options: InspectOptions): Promise<InspectionStrategy> {
@@ -57,7 +70,29 @@ export class TreeInspector {
 
   async inspect(device: DeviceInfo, options: InspectOptions): Promise<InspectResult> {
     const logger = getLogger();
-    const strategy = await this.resolveStrategy(device, options);
+    const hints: string[] = [];
+    let usedCache = false;
+
+    const cachedEntry = this.fileCache?.get(device.id);
+    let strategy: InspectionStrategy;
+
+    if (cachedEntry && cachedEntry.method !== 'none') {
+      logger.debug(`Using cached strategy for ${device.name}: ${cachedEntry.method}`);
+      usedCache = true;
+      if (cachedEntry.method === 'cdp' && options.metroPort > 0) {
+        const targets = await discoverTargets(options.metroPort);
+        const target = findRuntimeTarget(targets, device.name);
+        strategy = target
+          ? { method: 'cdp', reason: cachedEntry.reason, appId: target.appId, cdpTarget: target }
+          : await this.resolveStrategy(device, options);
+      } else {
+        strategy = { method: cachedEntry.method, reason: cachedEntry.reason, appId: cachedEntry.appId };
+      }
+    } else {
+      strategy = await this.resolveStrategy(device, options);
+    }
+
+    this.fileCache?.set(device.id, strategy.method, strategy.reason, strategy.appId);
 
     const base = { device: { name: device.name, platform: device.platform }, strategy };
 
@@ -71,12 +106,11 @@ export class TreeInspector {
         await cdp.disconnect();
         if (tree.length > 0) {
           logger.debug(`CDP: got ${tree.length} root nodes for ${device.name}`);
-          return { ...base, tree, capabilities: caps };
+          return { ...base, tree, capabilities: caps, hints };
         }
       } catch (err) {
         logger.debug(`CDP failed: ${err instanceof Error ? err.message : err}`);
       }
-      // CDP resolved but failed to execute — fall through to platform native
       logger.debug('CDP strategy resolved but returned no tree, falling back to native');
     }
 
@@ -89,6 +123,7 @@ export class TreeInspector {
           strategy: { method: 'uiautomator', reason: strategy.method === 'cdp' ? 'CDP fallback to native' : strategy.reason },
           tree,
           capabilities: { tree: 'basic', sourceMapping: 'none', styles: 'none', protocol: 'uiautomator' },
+          hints,
         };
       } catch (err) {
         logger.debug(`UIAutomator failed: ${err instanceof Error ? err.message : err}`);
@@ -104,10 +139,20 @@ export class TreeInspector {
           strategy: { method: 'idb', reason: strategy.method === 'cdp' ? 'CDP fallback to native' : strategy.reason },
           tree,
           capabilities: { tree: 'basic', sourceMapping: 'none', styles: 'none', protocol: 'idb' },
+          hints,
         };
       } catch (err) {
         logger.debug(`iOS accessibility failed: ${err instanceof Error ? err.message : err}`);
       }
+    }
+
+    if (device.platform === 'ios') {
+      hints.push('Install idb for native iOS tree inspection: brew install idb-companion && pip install fb-idb');
+    }
+
+    if (usedCache) {
+      this.fileCache?.delete(device.id);
+      logger.debug(`Invalidated cached strategy for ${device.name} after complete failure`);
     }
 
     return {
@@ -115,6 +160,7 @@ export class TreeInspector {
       strategy: { method: 'none', reason: 'No inspection method available' },
       tree: [],
       capabilities: { tree: 'none', sourceMapping: 'none', styles: 'none', protocol: 'none' },
+      hints,
     };
   }
 }

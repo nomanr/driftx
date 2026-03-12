@@ -27,41 +27,11 @@ interface CdpResponse {
   error?: { message: string };
 }
 
-const SKIP_NAMES = new Set([
-  'Unknown', 'RCTView', 'RCTText', 'RCTScrollView', 'RCTSinglelineTextInputView',
-  'RCTMultilineTextInputView', 'RCTScrollContentView', 'PressabilityDebugView',
-  'RNSVGPath', 'RNSVGGroup', 'RNSVGSvgView', 'RNSVGDefs', 'RNSVGClipPath',
-  'RNSVGRect', 'RNSVGCircle', 'RNSVGLine', 'RNSVGLinearGradient', 'RNSVGStop',
-  'RNSVGMask', 'RNSVGUse', 'RNSVGSymbol', 'RNSVGTSpan', 'RNSVGText',
-  'RNCSafeAreaProvider', 'StaticContainer',
-  'View', 'Text', 'Image', 'Animated(View)', 'Animated(Text)',
-  'Path', 'G', 'Svg', 'SvgComponent', 'Defs', 'ClipPath', 'Rect', 'Circle',
-  'Line', 'LinearGradient', 'Stop', 'Mask', 'Use', 'Symbol',
-  'Touchable', 'TouchableOpacity', 'TouchableHighlight', 'TouchableWithoutFeedback',
-  'Pressable',
-  'Root', 'AppContainer', 'RNSScreen', 'RNSScreenStack',
-  'RNSScreenContentWrapper', 'RNSScreenNavigationContainer',
-  'ScrollView', 'FlatList', 'SectionList',
-  'CellRenderer', 'VirtualizedList',
-  'SafeAreaView', 'SafeAreaProviderCompat',
-  'GestureHandlerRootView',
-  'DebugContainer', 'ScreenContentWrapper', 'FrameSizeProviderInner',
-  'NavigationContent', 'EnsureSingleNavigator',
-  'Portal.Host', 'PortalComponent',
-  'DelayedFreeze', 'Freeze', 'Suspender',
-  'MaybeScreen', 'MaybeScreenContainer', 'ScreenContainer',
-  'Animated(Anonymous)', 'SceneView', 'Screen', 'ScreenStack',
-  'NativeStackView', 'NativeStackNavigator', 'BottomTabView',
-  'Background', 'Separator', 'ItemSeparatorComponent', 'Space',
-  'ExpoImage',
-]);
-
 const FIBER_WALK_SCRIPT = `(function() {
   try {
     var hook = globalThis.__REACT_DEVTOOLS_GLOBAL_HOOK__;
     if (!hook || !hook.renderers || hook.renderers.size === 0) return JSON.stringify(null);
 
-    var SKIP = {${[...SKIP_NAMES].map(n => `'${n}':1`).join(',')}};
     var flat = [];
     hook.renderers.forEach(function(renderer, id) {
       var roots = hook.getFiberRoots(id);
@@ -80,31 +50,36 @@ const FIBER_WALK_SCRIPT = `(function() {
     if (typeof fiber.type === 'string') return fiber.type;
     if (fiber.type && fiber.type.displayName) return fiber.type.displayName;
     if (fiber.type && fiber.type.name) return fiber.type.name;
-    if (fiber.tag === 3) return 'Root';
+    if (fiber.tag === 3) return null;
     return null;
   }
 
-  function isSkip(name, fiber) {
+  function isNoise(name, fiber) {
     if (!name) return true;
     if (fiber.tag === 6) return true;
     var props = fiber.memoizedProps || {};
-    if (props.testID || props.nativeID) return false;
-    if (typeof props.children === 'string') return false;
-    if (SKIP[name]) return true;
+    var hasSignal = props.testID || props.nativeID || typeof props.children === 'string';
+    if (hasSignal) return false;
+    if (name === 'Unknown') return true;
+    if (fiber.tag === 5) return true;
+    if (name.substring(0, 3) === 'RCT' || name.substring(0, 5) === 'RNSVG') return true;
+    if (name.indexOf('ViewManagerAdapter_') === 0) return true;
     var len = name.length;
     if (len > 7 && name.indexOf('Context', len - 7) === len - 7) return true;
     if (len > 8 && name.indexOf('Provider', len - 8) === len - 8) return true;
     if (len > 8 && name.indexOf('Consumer', len - 8) === len - 8) return true;
-    if (name.indexOf('ViewManagerAdapter_') === 0) return true;
+    var c = name.charCodeAt(0);
+    if (c >= 97 && c <= 122) return true;
+    if (name.indexOf('Animated(') === 0) return true;
     return false;
   }
 
   function flattenFiber(fiber, depth) {
     if (!fiber) return;
     var name = getName(fiber);
-    var skip = isSkip(name, fiber);
+    var noise = isNoise(name, fiber);
 
-    if (!skip) {
+    if (!noise) {
       var props = fiber.memoizedProps || {};
       var testID = props.testID || props.nativeID || undefined;
       var text = typeof props.children === 'string' ? props.children : undefined;
@@ -237,7 +212,35 @@ export class CdpClient {
     const parsed = JSON.parse(value);
     if (!Array.isArray(parsed)) return [];
 
-    return this.dedup(this.rebuildTree(parsed));
+    return this.optimize(this.rebuildTree(parsed));
+  }
+
+  private optimize(roots: ComponentNode[]): ComponentNode[] {
+    let tree = roots;
+    let prevCount = -1;
+    for (let i = 0; i < 10; i++) {
+      tree = this.dedup(tree);
+      tree = this.pruneLeaves(tree);
+      const count = this.countNodes(tree);
+      if (count === prevCount) break;
+      prevCount = count;
+    }
+    return tree;
+  }
+
+  private countNodes(nodes: ComponentNode[]): number {
+    let c = 0;
+    for (const n of nodes) c += 1 + this.countNodes(n.children);
+    return c;
+  }
+
+  private pruneLeaves(nodes: ComponentNode[]): ComponentNode[] {
+    return nodes.reduce<ComponentNode[]>((acc, node) => {
+      node.children = this.pruneLeaves(node.children);
+      if (node.children.length === 0 && !node.testID && !node.text) return acc;
+      acc.push(node);
+      return acc;
+    }, []);
   }
 
   private rebuildTree(flat: Array<{ n: string; d: number; t?: string; x?: string }>): ComponentNode[] {
@@ -281,6 +284,11 @@ export class CdpClient {
       const sameText = node.text && child.text && node.text === child.text;
       const sameTestID = node.testID && child.testID && node.testID === child.testID;
       if (sameText || sameTestID) {
+        child.children = [...child.children];
+        return child;
+      }
+      const nodeHasSignal = node.testID || node.text;
+      if (!nodeHasSignal) {
         child.children = [...child.children];
         return child;
       }
