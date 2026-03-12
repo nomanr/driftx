@@ -221,6 +221,65 @@ npx drift compare --design <path> --with pixel,a11y --format json
 
 Runs pixel diff and accessibility audit together.
 
+## Device Interaction
+
+drift can interact with the running app — tap buttons, type text, swipe, navigate.
+
+### `drift tap <target>` — Tap a component
+
+```bash
+npx drift tap login-btn
+npx drift tap LoginButton
+npx drift tap "Submit"
+npx drift tap 150,300 --xy
+npx drift tap login-btn --device "iPhone 16 Pro"
+```
+
+Returns JSON with interaction result.
+
+### `drift type <target> <text>` — Type text into a field
+
+```bash
+npx drift type email-input "user@example.com"
+```
+
+Taps the target first to focus it, then types.
+
+### `drift swipe <direction>` — Swipe gesture
+
+```bash
+npx drift swipe up
+npx drift swipe down
+npx drift swipe left
+npx drift swipe right
+```
+
+### `drift go-back` — Press back button
+
+```bash
+npx drift go-back
+```
+
+### `drift open-url <url>` — Open a deep link
+
+```bash
+npx drift open-url "myapp://profile/123"
+```
+
+### Interaction Workflow
+
+1. Write/modify code
+2. Hot reload
+3. `npx drift tap "Login"` — navigate
+4. `npx drift compare --design mockup.png --format json` — verify
+5. Fix issues and repeat
+
+For form testing:
+1. `npx drift type email-input "test@example.com"`
+2. `npx drift type password-input "password123"`
+3. `npx drift tap "Submit"`
+4. `npx drift compare --baseline --format json`
+
 ## Configuration
 
 drift uses `.driftrc.json` in the project root. Run `npx drift init` to create one. Key settings:

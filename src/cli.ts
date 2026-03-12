@@ -19,6 +19,8 @@ import { doctorFormatter } from './formatters/doctor.js';
 import { inspectFormatter } from './formatters/inspect.js';
 import { compareFormatter } from './formatters/compare.js';
 import type { FormatterContext } from './formatters/types.js';
+import { createBackend } from './interact/backend.js';
+import { GestureExecutor } from './interact/gestures.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
@@ -174,6 +176,149 @@ export function createProgram(): Command {
       if (opts.json) globalOpts.format = 'json';
       const ctx = getFormatterContext(globalOpts);
       await formatOutput(inspectFormatter, result, ctx);
+    });
+
+  program
+    .command('tap <target>')
+    .description('Tap a component by testID, name, or text')
+    .option('-d, --device <id>', 'device ID or name')
+    .option('--xy', 'treat target as x,y coordinates')
+    .action(async (target: string, opts: Record<string, unknown>) => {
+      const shell = new RealShell();
+      const config = await loadConfig();
+      const discovery = new DeviceDiscovery(shell);
+      const devices = await discovery.list();
+      const booted = devices.filter((d) => d.state === 'booted');
+      if (booted.length === 0) throw new Error('No booted devices found');
+      let device;
+      if (opts.device) {
+        device = booted.find((d) => d.id === opts.device || d.name === opts.device);
+        if (!device) throw new Error(`Device not found: ${opts.device}`);
+      } else {
+        device = await pickDevice(booted);
+      }
+
+      const backend = createBackend(shell, device.platform);
+      const executor = new GestureExecutor(backend);
+
+      let result;
+      if (opts.xy) {
+        const [x, y] = target.split(',').map(Number);
+        result = await executor.tapXY(device, x, y);
+      } else {
+        const inspector = new TreeInspector(shell, process.cwd());
+        const inspectResult = await inspector.inspect(device, {
+          metroPort: config.metroPort,
+          devToolsPort: config.devToolsPort,
+          timeoutMs: config.timeouts.treeInspectionMs,
+        });
+        result = await executor.tap(device, inspectResult.tree, target);
+      }
+      console.log(JSON.stringify(result, null, 2));
+    });
+
+  program
+    .command('type <target> <text>')
+    .description('Tap a component then type text into it')
+    .option('-d, --device <id>', 'device ID or name')
+    .action(async (target: string, text: string, opts: Record<string, unknown>) => {
+      const shell = new RealShell();
+      const config = await loadConfig();
+      const discovery = new DeviceDiscovery(shell);
+      const devices = await discovery.list();
+      const booted = devices.filter((d) => d.state === 'booted');
+      if (booted.length === 0) throw new Error('No booted devices found');
+      let device;
+      if (opts.device) {
+        device = booted.find((d) => d.id === opts.device || d.name === opts.device);
+        if (!device) throw new Error(`Device not found: ${opts.device}`);
+      } else {
+        device = await pickDevice(booted);
+      }
+
+      const inspector = new TreeInspector(shell, process.cwd());
+      const inspectResult = await inspector.inspect(device, {
+        metroPort: config.metroPort,
+        devToolsPort: config.devToolsPort,
+        timeoutMs: config.timeouts.treeInspectionMs,
+      });
+
+      const backend = createBackend(shell, device.platform);
+      const executor = new GestureExecutor(backend);
+      const result = await executor.typeInto(device, inspectResult.tree, target, text);
+      console.log(JSON.stringify(result, null, 2));
+    });
+
+  program
+    .command('swipe <direction>')
+    .description('Swipe up, down, left, or right')
+    .option('-d, --device <id>', 'device ID or name')
+    .action(async (direction: string, opts: Record<string, unknown>) => {
+      const shell = new RealShell();
+      const discovery = new DeviceDiscovery(shell);
+      const devices = await discovery.list();
+      const booted = devices.filter((d) => d.state === 'booted');
+      if (booted.length === 0) throw new Error('No booted devices found');
+      let device;
+      if (opts.device) {
+        device = booted.find((d) => d.id === opts.device || d.name === opts.device);
+        if (!device) throw new Error(`Device not found: ${opts.device}`);
+      } else {
+        device = await pickDevice(booted);
+      }
+
+      const backend = createBackend(shell, device.platform);
+      const executor = new GestureExecutor(backend);
+      const result = await executor.swipe(device, direction as 'up' | 'down' | 'left' | 'right');
+      console.log(JSON.stringify(result, null, 2));
+    });
+
+  program
+    .command('go-back')
+    .description('Press the back button')
+    .option('-d, --device <id>', 'device ID or name')
+    .action(async (opts: Record<string, unknown>) => {
+      const shell = new RealShell();
+      const discovery = new DeviceDiscovery(shell);
+      const devices = await discovery.list();
+      const booted = devices.filter((d) => d.state === 'booted');
+      if (booted.length === 0) throw new Error('No booted devices found');
+      let device;
+      if (opts.device) {
+        device = booted.find((d) => d.id === opts.device || d.name === opts.device);
+        if (!device) throw new Error(`Device not found: ${opts.device}`);
+      } else {
+        device = await pickDevice(booted);
+      }
+
+      const backend = createBackend(shell, device.platform);
+      const executor = new GestureExecutor(backend);
+      const result = await executor.goBack(device);
+      console.log(JSON.stringify(result, null, 2));
+    });
+
+  program
+    .command('open-url <url>')
+    .description('Open a deep link or URL on the device')
+    .option('-d, --device <id>', 'device ID or name')
+    .action(async (url: string, opts: Record<string, unknown>) => {
+      const shell = new RealShell();
+      const discovery = new DeviceDiscovery(shell);
+      const devices = await discovery.list();
+      const booted = devices.filter((d) => d.state === 'booted');
+      if (booted.length === 0) throw new Error('No booted devices found');
+      let device;
+      if (opts.device) {
+        device = booted.find((d) => d.id === opts.device || d.name === opts.device);
+        if (!device) throw new Error(`Device not found: ${opts.device}`);
+      } else {
+        device = await pickDevice(booted);
+      }
+
+      const backend = createBackend(shell, device.platform);
+      const executor = new GestureExecutor(backend);
+      const result = await executor.openUrl(device, url);
+      console.log(JSON.stringify(result, null, 2));
     });
 
   return program;
