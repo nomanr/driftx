@@ -1,7 +1,9 @@
 import { Command } from 'commander';
 import { createRequire } from 'module';
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, readdirSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { homedir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { RealShell } from './shell.js';
 import { loadConfig } from './config.js';
 import { createLogger, setLogger } from './logger.js';
@@ -319,6 +321,55 @@ export function createProgram(): Command {
       const executor = new GestureExecutor(backend);
       const result = await executor.openUrl(device, url);
       console.log(JSON.stringify(result, null, 2));
+    });
+
+  program
+    .command('setup-claude')
+    .description('Register drift as a Claude Code plugin')
+    .action(() => {
+      const claudeDir = join(homedir(), '.claude');
+      const pluginsDir = join(claudeDir, 'plugins');
+      const driftPluginDir = join(pluginsDir, 'drift');
+      const registryPath = join(pluginsDir, 'installed_plugins.json');
+
+      const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+      const skillSource = join(packageRoot, 'drift-plugin');
+
+      if (!existsSync(skillSource)) {
+        console.error(`drift-plugin directory not found at ${skillSource}`);
+        process.exitCode = 1;
+        return;
+      }
+
+      mkdirSync(pluginsDir, { recursive: true });
+
+      if (existsSync(driftPluginDir)) {
+        try { unlinkSync(driftPluginDir); } catch {
+          console.error(`Could not remove existing ${driftPluginDir}. Remove it manually and retry.`);
+          process.exitCode = 1;
+          return;
+        }
+      }
+      symlinkSync(skillSource, driftPluginDir);
+
+      let registry: { version: number; plugins: Record<string, unknown[]> } = { version: 2, plugins: {} };
+      try {
+        registry = JSON.parse(readFileSync(registryPath, 'utf-8'));
+      } catch {}
+
+      registry.plugins['drift@local'] = [{
+        scope: 'user',
+        installPath: driftPluginDir,
+        version: pkg.version,
+        installedAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
+      }];
+
+      writeFileSync(registryPath, JSON.stringify(registry, null, 2));
+      console.log('drift registered as Claude Code plugin.');
+      console.log(`  Symlink: ${driftPluginDir} -> ${skillSource}`);
+      console.log(`  Registry: ${registryPath}`);
+      console.log('\nRestart Claude Code to pick up the drift skill.');
     });
 
   return program;
