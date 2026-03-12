@@ -1,28 +1,43 @@
 import { describe, it, expect } from 'vitest';
 import { compareFormatter } from '../../../src/formatters/compare.js';
 import type { CompareFormatData } from '../../../src/formatters/types.js';
-import type { DiffResult } from '../../../src/types.js';
+import type { CompareReport } from '../../../src/analyses/types.js';
 
-const baseDiffResult: DiffResult = {
+const baseReport: CompareReport = {
   runId: 'abc123',
-  metadata: {
-    runId: 'abc123',
-    startedAt: '2026-03-12T00:00:00Z',
-    completedAt: '2026-03-12T00:00:01Z',
-    projectRoot: '/test',
-    deviceId: 'emulator-5554',
-    platform: 'android',
-    framework: 'react-native',
-    orientation: 'portrait',
-    driftVersion: '0.1.0',
-    configHash: '',
-  },
-  totalPixels: 100000,
-  diffPixels: 2340,
-  diffPercentage: 2.34,
-  regions: [
-    { id: 'r-0', bounds: { x: 120, y: 340, width: 200, height: 44 }, pixelCount: 1500, percentage: 1.5 },
-    { id: 'r-1', bounds: { x: 0, y: 0, width: 393, height: 48 }, pixelCount: 840, percentage: 0.84 },
+  analyses: [
+    {
+      analysisName: 'pixel',
+      findings: [
+        {
+          id: 'diff-0', category: 'unknown', severity: 'major', confidence: 0.72,
+          region: { x: 120, y: 340, width: 200, height: 44 },
+          component: { name: 'SubmitButton', testID: 'submit-btn', bounds: { x: 100, y: 330, width: 240, height: 64 }, depth: 5 },
+          evidence: [
+            { type: 'pixel', score: 0.85, note: '14.2% pixel difference in region' },
+            { type: 'tree', score: 0.72, note: 'Matched to SubmitButton via bounds overlap (68%)' },
+          ],
+        },
+        {
+          id: 'diff-1', category: 'unknown', severity: 'minor', confidence: 0.3,
+          region: { x: 0, y: 0, width: 393, height: 48 },
+          evidence: [{ type: 'pixel', score: 0.3, note: '0.84% pixel difference' }],
+        },
+      ],
+      summary: 'Pixel diff: 2.340% — 2 regions (fail)',
+      metadata: {
+        totalPixels: 100000,
+        diffPixels: 2340,
+        diffPercentage: 2.34,
+        regions: [
+          { id: 'r-0', bounds: { x: 120, y: 340, width: 200, height: 44 }, pixelCount: 1500, percentage: 1.5 },
+          { id: 'r-1', bounds: { x: 0, y: 0, width: 393, height: 48 }, pixelCount: 840, percentage: 0.84 },
+        ],
+        durationMs: 400,
+        passed: false,
+      },
+      durationMs: 410,
+    },
   ],
   findings: [
     {
@@ -40,23 +55,51 @@ const baseDiffResult: DiffResult = {
       evidence: [{ type: 'pixel', score: 0.3, note: '0.84% pixel difference' }],
     },
   ],
-  capabilities: {
-    inspection: { tree: 'basic', sourceMapping: 'none', styles: 'none', protocol: 'uiautomator' },
-    scrollCapture: { supported: false, reason: 'Not implemented', mode: 'none' },
-    sourceMapping: false,
-    prerequisites: [],
+  summary: 'Pixel diff: 2.340% — 2 regions (fail)',
+  metadata: {
+    runId: 'abc123',
+    startedAt: '2026-03-12T00:00:00Z',
+    completedAt: '2026-03-12T00:00:01Z',
+    projectRoot: '/test',
+    deviceId: 'emulator-5554',
+    platform: 'android',
+    framework: 'react-native',
+    orientation: 'portrait',
+    driftVersion: '0.1.0',
+    configHash: '',
   },
   durationMs: 412,
 };
 
 const formatData: CompareFormatData = {
-  result: baseDiffResult,
+  report: baseReport,
   device: { name: 'Pixel_8', platform: 'android' },
   artifactDir: '.drift/runs/abc123',
 };
 
+const emptyReport: CompareReport = {
+  ...baseReport,
+  analyses: [
+    {
+      ...baseReport.analyses[0],
+      findings: [],
+      summary: 'Pixel diff: 0.000% (pass)',
+      metadata: {
+        totalPixels: 100000,
+        diffPixels: 0,
+        diffPercentage: 0,
+        regions: [],
+        durationMs: 100,
+        passed: true,
+      },
+    },
+  ],
+  findings: [],
+  summary: 'Pixel diff: 0.000% (pass)',
+};
+
 const emptyData: CompareFormatData = {
-  result: { ...baseDiffResult, diffPixels: 0, diffPercentage: 0, regions: [], findings: [] },
+  report: emptyReport,
   device: { name: 'Pixel_8', platform: 'android' },
   artifactDir: '.drift/runs/abc123',
 };
@@ -115,9 +158,9 @@ describe('compareFormatter', () => {
     it('includes git info when available', () => {
       const data: CompareFormatData = {
         ...formatData,
-        result: {
-          ...baseDiffResult,
-          metadata: { ...baseDiffResult.metadata, gitCommit: 'abc1234', gitBranch: 'main' },
+        report: {
+          ...baseReport,
+          metadata: { ...baseReport.metadata, gitCommit: 'abc1234', gitBranch: 'main' },
         },
       };
       const output = compareFormatter.markdown(data);
@@ -136,7 +179,7 @@ describe('compareFormatter', () => {
     it('outputs full format data as JSON', () => {
       const output = compareFormatter.json(formatData);
       const parsed = JSON.parse(output);
-      expect(parsed.result.runId).toBe('abc123');
+      expect(parsed.report.runId).toBe('abc123');
       expect(parsed.device.name).toBe('Pixel_8');
       expect(parsed.artifactDir).toBe('.drift/runs/abc123');
     });

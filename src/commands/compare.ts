@@ -1,31 +1,35 @@
-import type { Shell, DiffResult, DiffFinding, RunMetadata, DeviceInfo, InspectionCapabilities } from '../types.js';
+import type { Shell, RunMetadata, DeviceInfo, InspectionCapabilities } from '../types.js';
 import type { DriftConfig } from '../config.js';
 import type { CompareFormatData } from '../formatters/types.js';
 import type { InspectResult } from '../inspect/tree-inspector.js';
+import type { CompareReport } from '../analyses/types.js';
 import { DeviceDiscovery } from '../devices/discovery.js';
 import { captureScreenshot } from '../capture/capture.js';
-import { runComparison } from '../diff/compare.js';
 import { TreeInspector } from '../inspect/tree-inspector.js';
-import { matchRegionsToComponents } from '../inspect/component-matcher.js';
-import { generateFindings } from '../inspect/finding-generator.js';
 import { RunStore } from '../run-store.js';
 import { ExitCode } from '../exit-codes.js';
 import { compareFormatter } from '../formatters/compare.js';
 import { pickDevice } from './device-picker.js';
+import { buildDriftImage, buildAnalysisConfig } from '../analyses/context.js';
+import { createDefaultRegistry } from '../analyses/default-registry.js';
+import { AnalysisOrchestrator } from '../analyses/orchestrator.js';
 import * as fs from 'node:fs';
 
 export interface CompareCommandOptions {
-  design: string;
+  design?: string;
   device?: string;
   threshold?: number;
   screenshot?: string;
+  with?: string;
+  without?: string;
+  baseline?: boolean;
 }
 
 export async function runCompare(
   shell: Shell,
   config: DriftConfig,
   options: CompareCommandOptions,
-): Promise<{ result: DiffResult; exitCode: number; formatData: CompareFormatData }> {
+): Promise<{ report: CompareReport; exitCode: number; formatData: CompareFormatData }> {
   const store = new RunStore(process.cwd());
   const run = store.createRun();
 
@@ -63,33 +67,32 @@ export async function runCompare(
     await store.writeArtifact(run.runId, 'screenshot.png', buffer);
   }
 
-  const designBuffer = fs.readFileSync(options.design);
-  await store.writeArtifact(run.runId, 'design.png', designBuffer);
+  const screenshotImage = await buildDriftImage(screenshotPath);
 
-  const diffThreshold = options.threshold ?? config.diffThreshold;
-  const [mr, mg, mb, ma] = config.diffMaskColor;
-  const compareResult = await runComparison(options.design, screenshotPath, {
-    threshold: config.threshold,
-    diffThreshold,
-    regionMergeGap: config.regionMergeGap,
-    regionMinArea: config.regionMinArea,
-    ignoreRules: config.ignoreRules,
-    diffMaskColor: { r: mr, g: mg, b: mb, a: ma / 255 },
-    platform,
-  });
-
-  await store.writeArtifact(run.runId, 'diff-mask.png', compareResult.diffMaskBuffer);
-  for (const crop of compareResult.regionCrops) {
-    await store.writeArtifact(run.runId, `regions/${crop.id}.png`, crop.buffer);
+  let designImage;
+  if (options.design) {
+    const designBuffer = fs.readFileSync(options.design);
+    await store.writeArtifact(run.runId, 'design.png', designBuffer);
+    designImage = await buildDriftImage(options.design);
   }
 
-  let findings: DiffFinding[] = [];
+  let baselineImage;
+  if (options.baseline) {
+    const latestRunId = store.getLatestRun();
+    if (latestRunId) {
+      const baselinePath = store.getRunPath(latestRunId, 'screenshot.png');
+      if (fs.existsSync(baselinePath)) {
+        baselineImage = await buildDriftImage(baselinePath);
+      }
+    }
+  }
+
+  let inspectResult: InspectResult | undefined;
   let inspectionCapabilities: InspectionCapabilities = {
     tree: 'none', sourceMapping: 'none', styles: 'none', protocol: 'none',
   };
-  let inspectResult: InspectResult | undefined;
 
-  if (compareResult.regions.length > 0 && deviceInfo) {
+  if (deviceInfo) {
     const inspector = new TreeInspector(shell, process.cwd());
     inspectResult = await inspector.inspect(deviceInfo, {
       metroPort: config.metroPort,
@@ -97,15 +100,28 @@ export async function runCompare(
       timeoutMs: config.timeouts.treeInspectionMs,
     });
     inspectionCapabilities = inspectResult.capabilities;
-
-    const matches = matchRegionsToComponents(compareResult.regions, inspectResult.tree);
-    findings = generateFindings(compareResult.regions, matches, compareResult.totalPixels);
-  } else {
-    findings = generateFindings(compareResult.regions, [], compareResult.totalPixels);
   }
 
+  const analysisConfig = buildAnalysisConfig(config.analyses, options.with, options.without);
+
+  const ctx = {
+    screenshot: screenshotImage,
+    design: designImage,
+    baseline: baselineImage,
+    tree: inspectResult?.tree,
+    device: deviceInfo,
+    config,
+    analysisConfig,
+    runId: run.runId,
+    store,
+  };
+
+  const registry = createDefaultRegistry();
+  const orchestrator = new AnalysisOrchestrator(registry);
+  const report = await orchestrator.run(ctx);
+
   const startedAt = new Date().toISOString();
-  const metadata: Partial<RunMetadata> = {
+  const metadata: RunMetadata = {
     runId: run.runId,
     startedAt,
     completedAt: new Date().toISOString(),
@@ -115,34 +131,22 @@ export async function runCompare(
     orientation: 'portrait',
     framework: 'unknown',
     driftVersion: '0.1.0',
+    configHash: '',
   };
-  await store.writeMetadata(run.runId, metadata);
+  report.metadata = metadata;
+  await store.writeMetadata(run.runId, metadata as unknown as Record<string, unknown>);
 
-  const diffResult: DiffResult = {
-    runId: run.runId,
-    metadata: metadata as RunMetadata,
-    totalPixels: compareResult.totalPixels,
-    diffPixels: compareResult.diffPixels,
-    diffPercentage: compareResult.diffPercentage,
-    regions: compareResult.regions,
-    findings,
-    capabilities: {
-      inspection: inspectionCapabilities,
-      scrollCapture: { supported: false, reason: 'Not implemented', mode: 'none' },
-      sourceMapping: false,
-      prerequisites: [],
-    },
-    durationMs: compareResult.durationMs,
-  };
-
-  const resultJson = JSON.stringify(diffResult, null, 2);
+  const resultJson = JSON.stringify(report, null, 2);
   await store.writeArtifact(run.runId, 'result.json', Buffer.from(resultJson));
 
-  const passed = compareResult.diffPercentage <= diffThreshold;
+  const pixelMeta = report.analyses.find((a) => a.analysisName === 'pixel')?.metadata as Record<string, unknown> | undefined;
+  const diffPercentage = (pixelMeta?.diffPercentage as number) ?? 0;
+  const diffThreshold = options.threshold ?? config.diffThreshold;
+  const passed = diffPercentage <= diffThreshold;
   const exitCode = passed ? ExitCode.Success : ExitCode.DiffFound;
 
   const formatData: CompareFormatData = {
-    result: diffResult,
+    report,
     device: deviceInfo ? { name: deviceInfo.name, platform: deviceInfo.platform } : undefined,
     artifactDir: store.getRunPath(run.runId),
     tree: inspectResult?.tree,
@@ -152,5 +156,5 @@ export async function runCompare(
   const reportMarkdown = compareFormatter.markdown(formatData);
   await store.writeArtifact(run.runId, 'report.md', Buffer.from(reportMarkdown));
 
-  return { result: diffResult, exitCode, formatData };
+  return { report, exitCode, formatData };
 }

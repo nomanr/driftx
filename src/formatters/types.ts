@@ -1,4 +1,5 @@
-import type { DiffResult, ComponentNode } from '../types.js';
+import type { ComponentNode } from '../types.js';
+import type { CompareReport } from '../analyses/types.js';
 
 export type OutputFormat = 'terminal' | 'markdown' | 'json';
 
@@ -15,7 +16,7 @@ export interface OutputFormatter<T> {
 }
 
 export interface CompareFormatData {
-  result: DiffResult;
+  report: CompareReport;
   device?: { name: string; platform: 'android' | 'ios' };
   artifactDir: string;
   tree?: ComponentNode[];

@@ -1,6 +1,7 @@
 import pc from 'picocolors';
-import type { DiffFinding, ComponentNode } from '../types.js';
+import type { DiffFinding, DiffRegion, ComponentNode } from '../types.js';
 import type { OutputFormatter, CompareFormatData } from './types.js';
+import type { AnalysisResult } from '../analyses/types.js';
 
 function confidenceLabel(confidence: number): string {
   if (confidence >= 0.8) return 'high';
@@ -43,20 +44,41 @@ function formatTreePlain(nodes: ComponentNode[], indent: number = 0): string {
   return lines.join('\n');
 }
 
+function getPixelMeta(analyses: AnalysisResult[]): {
+  diffPercentage: number;
+  diffPixels: number;
+  totalPixels: number;
+  regions: DiffRegion[];
+} {
+  const pixel = analyses.find((a) => a.analysisName === 'pixel');
+  const meta = pixel?.metadata as Record<string, unknown> | undefined;
+  return {
+    diffPercentage: (meta?.diffPercentage as number) ?? 0,
+    diffPixels: (meta?.diffPixels as number) ?? 0,
+    totalPixels: (meta?.totalPixels as number) ?? 0,
+    regions: (meta?.regions as DiffRegion[]) ?? [],
+  };
+}
+
 export const compareFormatter: OutputFormatter<CompareFormatData> = {
   terminal(data) {
-    const { result } = data;
+    const { report } = data;
+    const pm = getPixelMeta(report.analyses);
     const lines: string[] = [];
     lines.push('');
-    lines.push(`  Diff: ${result.diffPercentage.toFixed(2)}% (${result.diffPixels.toLocaleString()}/${result.totalPixels.toLocaleString()} pixels)`);
-    if (result.regions.length > 0) lines.push(`  Regions: ${result.regions.length}`);
-    lines.push(`  Duration: ${result.durationMs}ms`);
+    lines.push(`  Diff: ${pm.diffPercentage.toFixed(2)}% (${pm.diffPixels.toLocaleString()}/${pm.totalPixels.toLocaleString()} pixels)`);
+    if (pm.regions.length > 0) lines.push(`  Regions: ${pm.regions.length}`);
+    lines.push(`  Duration: ${report.durationMs}ms`);
 
-    if (result.findings.length === 0) {
+    for (const a of report.analyses) {
+      lines.push(`  [${a.analysisName}] ${a.summary}`);
+    }
+
+    if (report.findings.length === 0) {
       lines.push('');
       lines.push(pc.green('  No differences found.'));
       lines.push('');
-      lines.push(`  Run: ${result.runId}`);
+      lines.push(`  Run: ${report.runId}`);
       lines.push('');
       return lines.join('\n');
     }
@@ -65,7 +87,7 @@ export const compareFormatter: OutputFormatter<CompareFormatData> = {
     lines.push('  Findings');
     lines.push('  ' + '─'.repeat(70));
 
-    for (const f of result.findings) {
+    for (const f of report.findings) {
       const tag = severityColor(f.severity, `[${f.severity.toUpperCase()}]`);
       const comp = f.component
         ? `${f.component.name}${f.component.testID ? ` [${f.component.testID}]` : ''}`
@@ -76,32 +98,38 @@ export const compareFormatter: OutputFormatter<CompareFormatData> = {
     }
 
     lines.push('');
-    lines.push(`  Summary: Found ${result.findings.length} differences (${severityCounts(result.findings)})`);
-    const insp = result.capabilities.inspection;
-    lines.push(`  Inspection: ${insp.tree} (${insp.protocol}) | Source mapping: ${insp.sourceMapping}`);
+    lines.push(`  Summary: Found ${report.findings.length} differences (${severityCounts(report.findings)})`);
     lines.push('');
-    lines.push(`  Run: ${result.runId}`);
+    lines.push(`  Run: ${report.runId}`);
     lines.push('');
     return lines.join('\n');
   },
 
   markdown(data) {
-    const { result, device, artifactDir } = data;
+    const { report, device, artifactDir } = data;
+    const pm = getPixelMeta(report.analyses);
     const lines: string[] = ['# Drift Compare Report', ''];
 
     if (device) lines.push(`**Device:** ${device.name} (${device.platform})`);
-    const meta = result.metadata;
+    const meta = report.metadata;
     if (meta.gitCommit || meta.gitBranch) {
       const git = [meta.gitCommit, meta.gitBranch].filter(Boolean).join(' on ');
       lines.push(`**Git:** ${git}`);
     }
     if (meta.framework && meta.framework !== 'unknown') lines.push(`**Framework:** ${meta.framework}`);
-    lines.push(`**Diff:** ${result.diffPercentage.toFixed(2)}% (${result.diffPixels.toLocaleString()} / ${result.totalPixels.toLocaleString()} pixels)`);
-    if (result.regions.length > 0) lines.push(`**Regions:** ${result.regions.length}`);
-    lines.push(`**Duration:** ${result.durationMs}ms`);
-    lines.push(`**Run ID:** ${result.runId}`);
+    lines.push(`**Diff:** ${pm.diffPercentage.toFixed(2)}% (${pm.diffPixels.toLocaleString()} / ${pm.totalPixels.toLocaleString()} pixels)`);
+    if (pm.regions.length > 0) lines.push(`**Regions:** ${pm.regions.length}`);
+    lines.push(`**Duration:** ${report.durationMs}ms`);
+    lines.push(`**Run ID:** ${report.runId}`);
 
-    if (result.findings.length === 0) {
+    if (report.analyses.length > 0) {
+      lines.push('', '## Analyses', '');
+      for (const a of report.analyses) {
+        lines.push(`- **${a.analysisName}** (${a.durationMs}ms): ${a.summary}`);
+      }
+    }
+
+    if (report.findings.length === 0) {
       lines.push('', 'No differences found.');
       return lines.join('\n');
     }
@@ -113,7 +141,7 @@ export const compareFormatter: OutputFormatter<CompareFormatData> = {
 
     lines.push('', '## Findings');
 
-    result.findings.forEach((f, i) => {
+    report.findings.forEach((f, i) => {
       const compName = f.component?.name ?? 'Unmatched region';
       lines.push('', `### ${i + 1}. [${f.severity.toUpperCase()}] ${compName} (${f.id})`, '');
       if (f.component) {
@@ -129,16 +157,9 @@ export const compareFormatter: OutputFormatter<CompareFormatData> = {
           lines.push(`  - ${e.type}: ${Math.round(e.score * 100)}% score — "${e.note}"`);
         }
       }
-      const regionId = result.regions[i]?.id;
+      const regionId = pm.regions[i]?.id;
       if (regionId) lines.push(`- **Region crop:** \`${artifactDir}/regions/${regionId}.png\``);
     });
-
-    const insp = result.capabilities.inspection;
-    lines.push('', '## Capabilities', '', '| Capability | Level |', '|------------|-------|');
-    lines.push(`| Tree | ${insp.tree} |`);
-    lines.push(`| Source mapping | ${insp.sourceMapping} |`);
-    lines.push(`| Styles | ${insp.styles} |`);
-    lines.push(`| Protocol | ${insp.protocol} |`);
 
     if (data.tree && data.tree.length > 0) {
       lines.push('', '## Component Tree Context', '', '```');
@@ -158,7 +179,7 @@ export const compareFormatter: OutputFormatter<CompareFormatData> = {
 
   json(data) {
     return JSON.stringify({
-      result: data.result,
+      report: data.report,
       device: data.device,
       artifactDir: data.artifactDir,
     }, null, 2);

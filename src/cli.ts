@@ -114,18 +114,27 @@ export function createProgram(): Command {
   program
     .command('compare')
     .description('Compare a screenshot against a design')
-    .requiredOption('--design <path>', 'path to design image')
+    .option('--design <path>', 'path to design image')
     .option('-d, --device <id>', 'device ID or name')
     .option('--threshold <n>', 'diff percentage threshold', parseFloat)
     .option('--screenshot <path>', 'use existing screenshot instead of capturing')
+    .option('--with <analyses>', 'comma-separated analyses to run')
+    .option('--without <analyses>', 'exclude specific analyses')
+    .option('--baseline', 'compare against previous run screenshot')
     .action(async function(this: Command, opts: Record<string, unknown>) {
+      if (!opts.design && !opts.baseline) {
+        throw new Error('Either --design or --baseline must be provided');
+      }
       const shell = new RealShell();
       const config = await loadConfig();
       const { exitCode, formatData } = await runCompare(shell, config, {
-        design: opts.design as string,
+        design: opts.design as string | undefined,
         device: opts.device as string | undefined,
         threshold: opts.threshold as number | undefined,
         screenshot: opts.screenshot as string | undefined,
+        with: opts.with as string | undefined,
+        without: opts.without as string | undefined,
+        baseline: !!opts.baseline,
       });
       const ctx = getFormatterContext(this.optsWithGlobals());
       await formatOutput(compareFormatter, formatData, ctx);
