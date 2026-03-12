@@ -88,6 +88,7 @@ export async function runCompare(
   if (compareResult.regions.length > 0 && deviceInfo) {
     const inspector = new TreeInspector(shell);
     const inspectResult = await inspector.inspect(deviceInfo, {
+      metroPort: config.metroPort,
       devToolsPort: config.devToolsPort,
       timeoutMs: config.timeouts.treeInspectionMs,
     });

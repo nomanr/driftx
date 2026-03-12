@@ -1,4 +1,5 @@
 import type { ComponentNode, Shell } from '../types.js';
+import { getLogger } from '../logger.js';
 
 interface AXElement {
   frame?: { x: number; y: number; width: number; height: number };
@@ -32,6 +33,16 @@ export function parseIosAccessibility(json: string): ComponentNode[] {
 }
 
 export async function dumpIosAccessibility(shell: Shell, deviceId: string, timeout?: number): Promise<ComponentNode[]> {
-  const { stdout } = await shell.exec('xcrun', ['simctl', 'accessibility_info', deviceId], timeout ? { timeout } : undefined);
-  return parseIosAccessibility(stdout);
+  const logger = getLogger();
+  const opts = timeout ? { timeout } : undefined;
+
+  // Try idb (Facebook's iOS Development Bridge) if available
+  try {
+    const { stdout } = await shell.exec('idb', ['ui', 'describe-all', '--udid', deviceId], opts);
+    return parseIosAccessibility(stdout);
+  } catch {
+    logger.debug('idb not available, skipping iOS accessibility tree');
+  }
+
+  throw new Error('iOS accessibility inspection requires idb (brew install idb-companion && pip install fb-idb) or React DevTools');
 }

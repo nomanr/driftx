@@ -141,6 +141,7 @@ export function createProgram(): Command {
 
       const inspector = new TreeInspector(shell);
       const result = await inspector.inspect(device, {
+        metroPort: config.metroPort,
         devToolsPort: config.devToolsPort,
         timeoutMs: config.timeouts.treeInspectionMs,
       });

@@ -50,9 +50,9 @@ describe('parseIosAccessibility', () => {
 });
 
 describe('dumpIosAccessibility', () => {
-  it('calls xcrun simctl accessibility_info via shell', async () => {
+  it('calls idb ui describe-all via shell', async () => {
     const shell = createMockShell({
-      'xcrun simctl accessibility_info ABC-DEF-123': {
+      'idb ui describe-all --udid ABC-DEF-123': {
         stdout: iosAccessibilityFixtures.simpleHierarchy,
         stderr: '',
       },
@@ -61,12 +61,8 @@ describe('dumpIosAccessibility', () => {
     expect(nodes.length).toBeGreaterThan(0);
   });
 
-  it('throws when xcrun command fails', async () => {
-    const shell = createMockShell({
-      'xcrun simctl accessibility_info': async () => {
-        throw new Error('simctl error');
-      },
-    });
+  it('throws when idb is not available', async () => {
+    const shell = createMockShell({});
     await expect(dumpIosAccessibility(shell, 'ABC-DEF-123')).rejects.toThrow();
   });
 });

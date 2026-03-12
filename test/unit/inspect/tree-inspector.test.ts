@@ -30,7 +30,7 @@ describe('TreeInspector', () => {
       },
     });
     const inspector = new TreeInspector(shell);
-    const result = await inspector.inspect(androidDevice, { devToolsPort: 0, timeoutMs: 100 });
+    const result = await inspector.inspect(androidDevice, { metroPort: 0, devToolsPort: 0, timeoutMs: 100 });
     expect(result.tree.length).toBeGreaterThan(0);
     expect(result.capabilities.tree).toBe('basic');
     expect(result.capabilities.protocol).toBe('uiautomator');
@@ -38,13 +38,13 @@ describe('TreeInspector', () => {
 
   it('returns iOS tree via Accessibility Inspector (Tier A)', async () => {
     const shell = createMockShell({
-      'xcrun simctl accessibility_info ABC-DEF-123': {
+      'idb ui describe-all --udid ABC-DEF-123': {
         stdout: iosAccessibilityFixtures.simpleHierarchy,
         stderr: '',
       },
     });
     const inspector = new TreeInspector(shell);
-    const result = await inspector.inspect(iosDevice, { devToolsPort: 0, timeoutMs: 100 });
+    const result = await inspector.inspect(iosDevice, { metroPort: 0, devToolsPort: 0, timeoutMs: 100 });
     expect(result.tree.length).toBeGreaterThan(0);
     expect(result.capabilities.tree).toBe('basic');
     expect(result.capabilities.protocol).toBe('accessibility');
@@ -53,7 +53,7 @@ describe('TreeInspector', () => {
   it('returns empty tree for iOS when accessibility fails', async () => {
     const shell = createMockShell({});
     const inspector = new TreeInspector(shell);
-    const result = await inspector.inspect(iosDevice, { devToolsPort: 0, timeoutMs: 100 });
+    const result = await inspector.inspect(iosDevice, { metroPort: 0, devToolsPort: 0, timeoutMs: 100 });
     expect(result.tree).toHaveLength(0);
     expect(result.capabilities.tree).toBe('none');
   });
@@ -66,7 +66,7 @@ describe('TreeInspector', () => {
       },
     });
     const inspector = new TreeInspector(shell);
-    const result = await inspector.inspect(androidDevice, { devToolsPort: 0, timeoutMs: 100 });
+    const result = await inspector.inspect(androidDevice, { metroPort: 0, devToolsPort: 0, timeoutMs: 100 });
     expect(result.capabilities.sourceMapping).toBe('none');
     expect(result.capabilities.styles).toBe('none');
   });
@@ -79,7 +79,7 @@ describe('TreeInspector', () => {
       },
     });
     const inspector = new TreeInspector(shell);
-    const result = await inspector.inspect(androidDevice, { devToolsPort: 19999, timeoutMs: 500 });
+    const result = await inspector.inspect(androidDevice, { metroPort: 0, devToolsPort: 19999, timeoutMs: 500 });
     expect(result.tree.length).toBeGreaterThan(0);
     expect(result.capabilities.tree).toBe('basic');
   });
@@ -91,7 +91,7 @@ describe('TreeInspector', () => {
       },
     });
     const inspector = new TreeInspector(shell);
-    const result = await inspector.inspect(androidDevice, { devToolsPort: 0, timeoutMs: 100 });
+    const result = await inspector.inspect(androidDevice, { metroPort: 0, devToolsPort: 0, timeoutMs: 100 });
     expect(result.tree).toHaveLength(0);
     expect(result.capabilities.tree).toBe('none');
   });
