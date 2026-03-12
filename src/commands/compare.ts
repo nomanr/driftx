@@ -5,6 +5,7 @@ import { captureScreenshot } from '../capture/capture.js';
 import { runComparison } from '../diff/compare.js';
 import { RunStore } from '../run-store.js';
 import { ExitCode } from '../exit-codes.js';
+import { pickDevice } from './device-picker.js';
 import * as fs from 'node:fs';
 
 export interface CompareCommandOptions {
@@ -34,9 +35,13 @@ export async function runCompare(
     const booted = devices.filter((d) => d.state === 'booted');
     if (booted.length === 0) throw new Error('No booted devices found');
 
-    const device = options.device
-      ? booted.find((d) => d.id === options.device) ?? booted[0]
-      : booted[0];
+    let device;
+    if (options.device) {
+      device = booted.find((d) => d.id === options.device || d.name === options.device);
+      if (!device) throw new Error(`Device not found: ${options.device}`);
+    } else {
+      device = await pickDevice(booted);
+    }
 
     deviceId = device.id;
     platform = device.platform;

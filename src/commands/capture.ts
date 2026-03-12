@@ -7,6 +7,7 @@ import { DeviceDiscovery } from '../devices/discovery.js';
 import { captureScreenshot } from '../capture/capture.js';
 import { RunStore } from '../run-store.js';
 import { withRetry } from '../retry.js';
+import { pickDevice } from './device-picker.js';
 
 export interface CaptureCommandOptions {
   device?: string;
@@ -37,7 +38,7 @@ export async function runCapture(
     if (!found) throw new Error(`Primary device not found: ${config.primaryDevice}`);
     device = found;
   } else {
-    device = booted[0];
+    device = await pickDevice(booted);
   }
 
   const buffer = await withRetry(
