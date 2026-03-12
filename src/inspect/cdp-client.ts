@@ -32,46 +32,38 @@ const FIBER_WALK_SCRIPT = `(function() {
     var hook = globalThis.__REACT_DEVTOOLS_GLOBAL_HOOK__;
     if (!hook || !hook.renderers || hook.renderers.size === 0) return JSON.stringify(null);
 
-    var nodes = [];
+    var flat = [];
     hook.renderers.forEach(function(renderer, id) {
       var roots = hook.getFiberRoots(id);
       if (!roots) return;
       roots.forEach(function(root) {
-        if (root.current) {
-          var tree = walkFiber(root.current);
-          if (tree) nodes.push(tree);
-        }
+        if (root.current) flattenFiber(root.current, 0);
       });
     });
 
-    return JSON.stringify(nodes.length > 0 ? nodes : null);
+    return flat.length > 0 ? JSON.stringify(flat) : JSON.stringify(null);
   } catch(e) {
     return JSON.stringify(null);
   }
 
-  function walkFiber(fiber) {
-    if (!fiber) return null;
-
+  function flattenFiber(fiber, depth) {
+    if (!fiber) return;
     var name = 'Unknown';
     if (typeof fiber.type === 'string') name = fiber.type;
     else if (fiber.type && fiber.type.displayName) name = fiber.type.displayName;
     else if (fiber.type && fiber.type.name) name = fiber.type.name;
     else if (fiber.tag === 3) name = 'Root';
-    else if (fiber.tag === 6) return null;
-
+    else if (fiber.tag === 6) { flattenSiblings(fiber, depth); return; }
     var props = fiber.memoizedProps || {};
     var testID = props.testID || props.nativeID || undefined;
     var text = typeof props.children === 'string' ? props.children : undefined;
-
-    var children = [];
+    flat.push({ n: name, d: depth, t: testID, x: text });
     var child = fiber.child;
-    while (child) {
-      var childNode = walkFiber(child);
-      if (childNode) children.push(childNode);
-      child = child.sibling;
-    }
-
-    return { name: name, testID: testID, text: text, children: children };
+    while (child) { flattenFiber(child, depth + 1); child = child.sibling; }
+  }
+  function flattenSiblings(fiber, depth) {
+    var sib = fiber.sibling;
+    while (sib) { flattenFiber(sib, depth); sib = sib.sibling; }
   }
 })()`;
 
@@ -194,21 +186,37 @@ export class CdpClient {
     const parsed = JSON.parse(value);
     if (!Array.isArray(parsed)) return [];
 
-    const idCounter = { n: 0 };
-    return parsed.map((node: any) => this.toComponentNode(node, idCounter));
+    return this.rebuildTree(parsed);
   }
 
-  private toComponentNode(raw: any, idCounter: { n: number }): ComponentNode {
-    return {
-      id: String(idCounter.n++),
-      name: raw.name ?? 'Unknown',
-      reactName: raw.name,
-      testID: raw.testID || undefined,
-      bounds: { x: 0, y: 0, width: 0, height: 0 },
-      text: raw.text || undefined,
-      children: (raw.children ?? []).map((c: any) => this.toComponentNode(c, idCounter)),
-      inspectionTier: 'detailed',
-    };
+  private rebuildTree(flat: Array<{ n: string; d: number; t?: string; x?: string }>): ComponentNode[] {
+    const roots: ComponentNode[] = [];
+    const stack: ComponentNode[] = [];
+    let id = 0;
+
+    for (const entry of flat) {
+      const node: ComponentNode = {
+        id: String(id++),
+        name: entry.n,
+        reactName: entry.n,
+        testID: entry.t || undefined,
+        bounds: { x: 0, y: 0, width: 0, height: 0 },
+        text: entry.x || undefined,
+        children: [],
+        inspectionTier: 'detailed',
+      };
+
+      while (stack.length > entry.d) stack.pop();
+
+      if (stack.length === 0) {
+        roots.push(node);
+      } else {
+        stack[stack.length - 1].children.push(node);
+      }
+      stack.push(node);
+    }
+
+    return roots;
   }
 
   getCapabilities(): InspectionCapabilities {
