@@ -12,6 +12,9 @@ import { DeviceDiscovery } from './devices/discovery.js';
 import { formatDeviceTable } from './commands/devices.js';
 import { runCapture } from './commands/capture.js';
 import { runCompare, formatCompareOutput } from './commands/compare.js';
+import { TreeInspector } from './inspect/tree-inspector.js';
+import { formatTree, formatCapabilities } from './commands/inspect.js';
+import { pickDevice } from './commands/device-picker.js';
 import { ExitCode } from './exit-codes.js';
 
 const require = createRequire(import.meta.url);
@@ -112,6 +115,54 @@ export function createProgram(): Command {
       });
       console.log(formatCompareOutput(result));
       process.exitCode = exitCode;
+    });
+
+  program
+    .command('inspect')
+    .description('Inspect component tree on device')
+    .option('-d, --device <id>', 'device ID or name')
+    .option('--json', 'output as JSON')
+    .option('--capabilities', 'show inspection capabilities only')
+    .action(async (opts) => {
+      const shell = new RealShell();
+      const config = await loadConfig();
+      const discovery = new DeviceDiscovery(shell);
+      const devices = await discovery.list();
+      const booted = devices.filter((d) => d.state === 'booted');
+      if (booted.length === 0) throw new Error('No booted devices found');
+
+      let device;
+      if (opts.device) {
+        device = booted.find((d) => d.id === opts.device || d.name === opts.device);
+        if (!device) throw new Error(`Device not found: ${opts.device}`);
+      } else {
+        device = await pickDevice(booted);
+      }
+
+      const inspector = new TreeInspector(shell);
+      const result = await inspector.inspect(device, {
+        devToolsPort: config.devToolsPort,
+        timeoutMs: config.timeouts.treeInspectionMs,
+      });
+
+      if (opts.capabilities) {
+        console.log(formatCapabilities(result.capabilities));
+        return;
+      }
+
+      if (opts.json) {
+        console.log(JSON.stringify({ tree: result.tree, capabilities: result.capabilities }, null, 2));
+        return;
+      }
+
+      if (result.tree.length === 0) {
+        console.log('No component tree available. Try running with React DevTools enabled.');
+        return;
+      }
+
+      console.log('');
+      console.log(formatTree(result.tree));
+      console.log(formatCapabilities(result.capabilities));
     });
 
   return program;
