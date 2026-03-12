@@ -59,7 +59,7 @@ export class DevToolsClient {
     try {
       return await this.connect(port, timeoutMs);
     } catch {
-      logger.warn(`React DevTools WebSocket not responding on port ${port} — is the app running in dev mode? Falling back to basic inspection.`);
+      logger.debug(`Legacy React DevTools not available on port ${port}, skipping`);
       return [];
     }
   }

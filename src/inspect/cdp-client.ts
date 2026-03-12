@@ -98,10 +98,9 @@ function findRuntimeTarget(targets: CdpTarget[], deviceName?: string): CdpTarget
   );
 
   if (deviceName) {
-    const match = rnTargets.find((t) =>
+    return rnTargets.find((t) =>
       t.deviceName?.toLowerCase().includes(deviceName.toLowerCase()),
     );
-    if (match) return match;
   }
 
   return rnTargets[0];
