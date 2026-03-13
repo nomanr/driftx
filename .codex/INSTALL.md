@@ -19,14 +19,13 @@
    ln -s ~/.codex/driftx/driftx-plugin/skills ~/.agents/skills/driftx
    ```
 
-3. **Restart Codex** to discover the skill.
+3. **Verify the setup:**
+   ```bash
+   ls -la ~/.agents/skills/driftx
+   driftx doctor
+   ```
 
-## Verify
-
-```bash
-ls -la ~/.agents/skills/driftx
-driftx doctor
-```
+4. **Tell the user to close and restart the Codex chat** for the skill to take effect.
 
 ## Updating
 

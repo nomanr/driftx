@@ -1,63 +1,83 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="driftx — Eyes and hands for your AI coding agent" width="800" />
+  <img src="assets/banner.svg" alt="driftx — Eyes and hands for agentic mobile development" width="800" />
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/driftx"><img src="https://img.shields.io/npm/v/driftx?color=6366f1&label=npm" alt="npm version" /></a>
-  <a href="https://github.com/nomanr/driftx/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/driftx?color=8b5cf6" alt="license" /></a>
-  <a href="https://www.npmjs.com/package/driftx"><img src="https://img.shields.io/npm/dm/driftx?color=a78bfa" alt="downloads" /></a>
-  <img src="https://img.shields.io/badge/platform-iOS%20%7C%20Android-6366f1" alt="platform" />
+  <a href="https://www.npmjs.com/package/driftx"><img src="https://img.shields.io/npm/v/driftx?style=flat-square&color=e8a23e&label=npm" alt="npm version" /></a>
+  &nbsp;
+  <a href="https://github.com/nomanr/driftx/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/driftx?style=flat-square&color=c49344" alt="license" /></a>
+  &nbsp;
+  <a href="https://www.npmjs.com/package/driftx"><img src="https://img.shields.io/npm/dm/driftx?style=flat-square&color=b8860b" alt="downloads" /></a>
+  &nbsp;
+  <img src="https://img.shields.io/badge/iOS%20%7C%20Android-e8a23e?style=flat-square&label=platform" alt="platform" />
 </p>
 
 <p align="center">
-  Give your AI coding agent eyes and hands for your mobile app.
+  <b>Let AI agents see, tap, type, swipe, and visually diff your React Native app.</b><br/>
+  <sub>Works with Claude Code · Cursor · Gemini CLI · Codex · any agent that runs shell commands</sub>
 </p>
 
 ---
 
-driftx lets AI agents see your app's screen, tap buttons, type text, swipe, and compare against designs — on iOS simulators and Android emulators. It works with Claude Code, Cursor, Gemini CLI, Codex, and any agent that can run shell commands.
+Install driftx, connect your agent, and ask it to test your app. It discovers driftx automatically — on iOS simulators and Android emulators.
 
-## How It Works
+## Quick Start
 
-You tell your agent "test the login flow" or "compare this screen against the Figma mockup." The agent uses driftx to capture screenshots, inspect the component tree, find and tap buttons by their text or testID, type into fields, swipe through lists, and run visual comparisons — all without you touching a device.
-
-The skill triggers automatically. When you ask your agent to interact with your app, it knows to reach for driftx. No manual invocation needed.
-
-## Installation
-
-First, install the CLI globally:
+### 1. Install
 
 ```bash
 npm install -g driftx
 ```
 
-Then set up the skill for your coding agent:
+### 2. Connect your agent
 
-### Claude Code
+<details open>
+<summary><strong>Claude Code</strong></summary>
 
 ```bash
 driftx setup-claude
 ```
 
-Restart Claude Code. The agent now has the `driftx` skill.
+Restart Claude Code. The `driftx` skill is now available.
 
-### Cursor
-
-In Cursor Agent chat:
+**Fallback** — if the command above doesn't work, tell Claude Code:
 
 ```
-/add-plugin driftx
+Fetch and follow instructions from https://raw.githubusercontent.com/nomanr/driftx/main/.codex/INSTALL.md
 ```
 
-Or search for "driftx" in the plugin marketplace.
+Verify with `driftx doctor`, then close and restart the chat.
 
-### Gemini CLI
+</details>
 
-```bash
-gemini extensions install https://github.com/nomanr/driftx
+<details>
+<summary><strong>Cursor</strong></summary>
+
+Tell Cursor:
+
+```
+Fetch and follow instructions from https://raw.githubusercontent.com/nomanr/driftx/main/.cursor/INSTALL.md
 ```
 
-### Codex
+Verify with `driftx doctor`, then close and restart the chat.
+
+</details>
+
+<details>
+<summary><strong>Gemini CLI</strong></summary>
+
+Tell Gemini:
+
+```
+Fetch and follow instructions from https://raw.githubusercontent.com/nomanr/driftx/main/.gemini/INSTALL.md
+```
+
+Verify with `driftx doctor`, then close and restart the chat.
+
+</details>
+
+<details>
+<summary><strong>Codex</strong></summary>
 
 Tell Codex:
 
@@ -65,9 +85,14 @@ Tell Codex:
 Fetch and follow instructions from https://raw.githubusercontent.com/nomanr/driftx/main/.codex/INSTALL.md
 ```
 
-### Other Agents
+Verify with `driftx doctor`, then close and restart the chat.
 
-driftx is a standard CLI. Any agent that can run shell commands can use it. Add this to your agent's system prompt or rules:
+</details>
+
+<details>
+<summary><strong>Other agents</strong></summary>
+
+Any agent that runs shell commands can use driftx. Add this to your agent's system prompt:
 
 ```
 You have access to `driftx` for mobile app testing:
@@ -80,77 +105,67 @@ You have access to `driftx` for mobile app testing:
 Always capture a screenshot after interactions to verify the result.
 ```
 
-### Verify Installation
+</details>
+
+### 3. Verify
 
 ```bash
 driftx doctor
 ```
 
-This checks that your environment is ready — Metro, adb, xcrun, simulators.
-
-## Prerequisites
-
-- **Metro bundler** running (`npx react-native start`) for tree inspection and tap resolution
-- **Android**: `adb` available, emulator booted
-- **iOS**: `xcrun simctl` available, simulator booted
-
-## What Your Agent Can Do
-
-**See the app** — Capture screenshots, inspect the React Native component tree, get element names, testIDs, text content, and positions.
-
-**Interact with the app** — Tap buttons, type text, swipe, navigate back, open deep links. Targets resolve automatically by testID, component name, or visible text.
-
-**Compare against designs** — Pixel-diff against Figma exports or mockups. Run accessibility audits. Detect layout regressions between builds.
+Checks that Metro, adb, xcrun, and your simulators are ready.
 
 ## Commands
 
-### Capture & Compare
-
 ```bash
+# Capture & compare
 driftx capture -o screenshot.png
 driftx compare --design mockup.png --format json
 driftx compare --design mockup.png --with a11y --format json
 driftx compare --baseline --format json
-```
 
-### Inspect
-
-```bash
+# Inspect
 driftx inspect --json
+
+# Interact
+driftx tap "Login"                        # by text
+driftx tap login-btn                      # by testID
+driftx tap 150,300 --xy                   # by coordinates
+driftx type email-input "user@test.com"
+driftx swipe up
+driftx swipe down --distance 200
+driftx go-back
+driftx open-url "myapp://profile/123"
+
+# Utilities
+driftx devices
+driftx doctor
+driftx init
 ```
 
-Returns component names, testIDs, text content, and bounds.
-
-### Interact
-
-```bash
-driftx tap "Login"                        # tap by text
-driftx tap login-btn                      # tap by testID
-driftx tap 150,300 --xy                   # tap by coordinates
-driftx type email-input "user@test.com"   # type into field
-driftx swipe up                           # swipe gesture
-driftx swipe down --distance 200          # custom distance
-driftx go-back                            # back button
-driftx open-url "myapp://profile/123"     # deep link
-```
-
-### Utilities
-
-```bash
-driftx devices       # list simulators/emulators
-driftx doctor        # check prerequisites
-driftx init          # generate .driftxrc.json
-```
-
-## Global Flags
+## Flags
 
 | Flag | Description |
 |------|-------------|
-| `-d, --device <id>` | Device ID or name (picker shown if multiple devices booted) |
+| `-d, --device <id>` | Device ID or name (picker shown if multiple) |
 | `--bundle-id <id>` | iOS bundle identifier (auto-detected from Metro) |
 | `--verbose` | Debug logging |
 | `--format <type>` | `terminal`, `markdown`, or `json` |
 | `--copy` | Copy output to clipboard |
+
+## Requirements
+
+- **Metro bundler** running (`npx react-native start`)
+- **Android**: `adb` available, emulator booted
+- **iOS**: `xcrun simctl` available, simulator booted
+
+## How It Works
+
+**Tap resolution** uses a 4-tier fallback: CDP fiber tree → XCUITest companion hierarchy → accessibility element query → fiber measurement via `measureInWindow()`.
+
+**iOS companion** is a pre-built XCUITest server that auto-launches on the simulator. Ships in the npm package — no Xcode build step required.
+
+**Visual analysis** compares screenshots pixel-by-pixel against design images, runs accessibility checks, and detects layout regressions between builds.
 
 ## Platform Support
 
@@ -159,25 +174,13 @@ driftx init          # generate .driftxrc.json
 | Android  | Supported         | Not yet         |
 | iOS      | Supported         | Not yet         |
 
-## How It Works Under the Hood
-
-**Tap resolution** uses a 4-tier fallback chain:
-1. CDP fiber tree — React Native component names and text
-2. XCUITest companion hierarchy — iOS accessibility labels with real screen bounds
-3. Accessibility element query — XCUITest `/find` endpoint
-4. Fiber measurement — `stateNode.measureInWindow()` for elements without a11y labels
-
-**iOS companion** is a pre-built XCUITest server that auto-launches on the simulator. Ships pre-built in the npm package — no Xcode build step on install.
-
-**Visual analysis** compares screenshots pixel-by-pixel against design images, runs accessibility checks on the component tree, and detects layout regressions between builds.
-
 ## Configuration
 
 ```bash
 driftx init
 ```
 
-Or create `.driftxrc.json` manually:
+Creates `.driftxrc.json`:
 
 ```json
 {
@@ -188,21 +191,13 @@ Or create `.driftxrc.json` manually:
 }
 ```
 
-## Updating
-
-driftx notifies you when a new version is available:
-
-```bash
-npm install -g driftx
-```
-
 ## Development
 
 ```bash
 npm install
 npm run dev          # watch mode
 npm test             # run tests
-npm run build:ios    # rebuild iOS companion after Swift changes
+npm run build:ios    # rebuild iOS companion
 ```
 
 ## License
