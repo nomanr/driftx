@@ -44,13 +44,15 @@ export class GestureExecutor {
     }
   }
 
-  async swipe(device: DeviceInfo, direction: SwipeDirection, distance = 600, durationMs = 300): Promise<InteractionResult> {
+  async swipe(device: DeviceInfo, direction: SwipeDirection, distance?: number, durationMs = 300): Promise<InteractionResult> {
     const start = Date.now();
     try {
-      const cx = device.screenSize?.width ? Math.round(device.screenSize.width / 2) : 540;
-      const cy = device.screenSize?.height ? Math.round(device.screenSize.height / 2) : 960;
+      const isIos = device.platform === 'ios';
+      const cx = device.screenSize?.width ? Math.round(device.screenSize.width / 2) : (isIos ? 197 : 540);
+      const cy = device.screenSize?.height ? Math.round(device.screenSize.height / 2) : (isIos ? 426 : 960);
+      const actualDistance = distance ?? (isIos ? 300 : 600);
       const from = { x: cx, y: cy };
-      const half = Math.round(distance / 2);
+      const half = Math.round(actualDistance / 2);
       const to = direction === 'up'    ? { x: cx, y: cy - half }
                : direction === 'down'  ? { x: cx, y: cy + half }
                : direction === 'left'  ? { x: cx - half, y: cy }

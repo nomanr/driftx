@@ -13,6 +13,20 @@ export function resolveTarget(tree: ComponentNode[], query: string): TapTarget |
   const byText = nodes.find((n) => n.text === query && hasSize(n));
   if (byText) return centerOf(byText, `text:${query}`);
 
+  const lowerQuery = query.toLowerCase();
+
+  const startsWithMatches = nodes.filter((n) =>
+    n.text && hasSize(n) && (n.text.toLowerCase().startsWith(lowerQuery + ',') || n.text.toLowerCase().startsWith(lowerQuery + ' ')),
+  );
+  const byTextStartsWith = smallest(startsWithMatches);
+  if (byTextStartsWith) return centerOf(byTextStartsWith, `text~:${query}`);
+
+  const containsMatches = nodes.filter((n) =>
+    n.text && hasSize(n) && n.text.toLowerCase().includes(lowerQuery),
+  );
+  const byTextContains = smallest(containsMatches);
+  if (byTextContains) return centerOf(byTextContains, `text~:${query}`);
+
   return null;
 }
 
@@ -29,6 +43,15 @@ function flattenTree(nodes: ComponentNode[]): ComponentNode[] {
 
 function hasSize(node: ComponentNode): boolean {
   return node.bounds.width > 0 && node.bounds.height > 0;
+}
+
+function area(node: ComponentNode): number {
+  return node.bounds.width * node.bounds.height;
+}
+
+function smallest(nodes: ComponentNode[]): ComponentNode | undefined {
+  if (nodes.length === 0) return undefined;
+  return nodes.reduce((best, n) => area(n) < area(best) ? n : best);
 }
 
 function centerOf(node: ComponentNode, resolvedFrom: string): TapTarget {

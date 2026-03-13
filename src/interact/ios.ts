@@ -1,34 +1,31 @@
 import type { Shell, DeviceInfo } from '../types.js';
 import type { Point, InteractionBackend } from './types.js';
+import type { CompanionClient } from '../ios-companion/client.js';
 
 export class IosBackend implements InteractionBackend {
-  constructor(private shell: Shell) {}
+  constructor(private shell: Shell, private companion: CompanionClient) {}
 
-  async tap(device: DeviceInfo, point: Point): Promise<void> {
-    await this.simctlIo(device, ['tap', String(point.x), String(point.y)]);
+  async tap(_device: DeviceInfo, point: Point): Promise<void> {
+    await this.companion.tap(point.x, point.y);
   }
 
-  async longPress(device: DeviceInfo, point: Point, _durationMs: number): Promise<void> {
-    await this.simctlIo(device, ['longpress', String(point.x), String(point.y)]);
+  async longPress(_device: DeviceInfo, point: Point, durationMs: number): Promise<void> {
+    await this.companion.longPress(point.x, point.y, durationMs);
   }
 
-  async swipe(device: DeviceInfo, from: Point, to: Point, _durationMs: number): Promise<void> {
-    await this.simctlIo(device, ['swipe', String(from.x), String(from.y), String(to.x), String(to.y)]);
+  async swipe(_device: DeviceInfo, from: Point, to: Point, durationMs: number): Promise<void> {
+    await this.companion.swipe(from.x, from.y, to.x, to.y, durationMs);
   }
 
-  async type(device: DeviceInfo, text: string): Promise<void> {
-    await this.simctlIo(device, ['type', text]);
+  async type(_device: DeviceInfo, text: string): Promise<void> {
+    await this.companion.type(text);
   }
 
-  async keyEvent(device: DeviceInfo, key: string): Promise<void> {
-    await this.simctlIo(device, ['sendkey', key]);
+  async keyEvent(_device: DeviceInfo, key: string): Promise<void> {
+    await this.companion.keyEvent(key);
   }
 
   async openUrl(device: DeviceInfo, url: string): Promise<void> {
     await this.shell.exec('xcrun', ['simctl', 'openurl', device.id, url]);
-  }
-
-  private async simctlIo(device: DeviceInfo, args: string[]): Promise<void> {
-    await this.shell.exec('xcrun', ['simctl', 'io', device.id, ...args]);
   }
 }

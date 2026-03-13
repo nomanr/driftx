@@ -68,6 +68,7 @@ export const configSchema = z.object({
   regionMergeGap: z.number().int().nonnegative().optional(),
   regionMinArea: z.number().int().nonnegative().optional(),
   diffMaskColor: z.tuple([z.number(), z.number(), z.number(), z.number()]).optional(),
+  companionPort: z.number().int().positive().optional(),
   analyses: analysesSchema,
 });
 
@@ -94,6 +95,7 @@ export type DriftxConfig = {
   regionMergeGap: number;
   regionMinArea: number;
   diffMaskColor: [number, number, number, number];
+  companionPort: number;
   analyses: {
     default: string[];
     disabled: string[];
@@ -124,6 +126,7 @@ const DEFAULTS: DriftxConfig = {
   regionMergeGap: 8,
   regionMinArea: 100,
   diffMaskColor: [255, 0, 0, 128],
+  companionPort: 8300,
   analyses: {
     default: [],
     disabled: [],
@@ -142,6 +145,7 @@ export function parseConfig(raw: unknown): DriftxConfig {
   return {
     ...defaults,
     ...parsed,
+    companionPort: parsed.companionPort ?? defaults.companionPort,
     viewport: { ...defaults.viewport, ...parsed.viewport },
     timeouts: { ...defaults.timeouts, ...parsed.timeouts },
     retry: { ...defaults.retry, ...parsed.retry },

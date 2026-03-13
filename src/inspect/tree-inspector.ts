@@ -5,14 +5,17 @@ import { CdpClient, discoverTargets, findRuntimeTarget } from './cdp-client.js';
 import type { CdpTarget } from './cdp-client.js';
 import { StrategyCache } from './strategy-cache.js';
 import { getLogger } from '../logger.js';
+import type { CompanionLauncher } from '../ios-companion/launcher.js';
+import { parseCompanionHierarchy } from '../ios-companion/hierarchy-parser.js';
 
 export interface InspectOptions {
   metroPort: number;
   devToolsPort: number;
   timeoutMs: number;
+  bundleId?: string;
 }
 
-export type StrategyMethod = 'cdp' | 'uiautomator' | 'idb' | 'none';
+export type StrategyMethod = 'cdp' | 'uiautomator' | 'idb' | 'xcuitest' | 'none';
 
 export interface InspectionStrategy {
   method: StrategyMethod;
@@ -32,10 +35,12 @@ export interface InspectResult {
 export class TreeInspector {
   private shell: Shell;
   private fileCache: StrategyCache | null;
+  private companionLauncher: CompanionLauncher | null;
 
-  constructor(shell: Shell, projectRoot?: string) {
+  constructor(shell: Shell, projectRoot?: string, companionLauncher?: CompanionLauncher) {
     this.shell = shell;
     this.fileCache = projectRoot ? new StrategyCache(projectRoot) : null;
+    this.companionLauncher = companionLauncher ?? null;
   }
 
   invalidateCache(deviceId?: string): void {
@@ -63,6 +68,10 @@ export class TreeInspector {
 
     if (device.platform === 'android') {
       return { method: 'uiautomator', reason: 'Android native inspection' };
+    }
+
+    if (this.companionLauncher) {
+      return { method: 'xcuitest', reason: 'iOS native inspection via XCUITest companion' };
     }
 
     return { method: 'idb', reason: 'iOS native inspection via idb' };
@@ -130,13 +139,31 @@ export class TreeInspector {
       }
     }
 
-    if (strategy.method === 'idb' || (strategy.method === 'cdp' && device.platform === 'ios')) {
+    if (strategy.method === 'xcuitest' || (strategy.method === 'cdp' && device.platform === 'ios' && this.companionLauncher)) {
+      try {
+        const client = await this.companionLauncher!.ensureRunning(device.id, options.bundleId);
+        const rawNodes = await client.hierarchy();
+        const tree = parseCompanionHierarchy(rawNodes);
+        logger.debug(`xcuitest: got ${tree.length} root nodes for ${device.name}`);
+        return {
+          ...base,
+          strategy: { method: 'xcuitest', reason: strategy.method === 'cdp' ? 'CDP fallback to native' : strategy.reason },
+          tree,
+          capabilities: { tree: 'basic', sourceMapping: 'none', styles: 'none', protocol: 'xcuitest' },
+          hints,
+        };
+      } catch (err) {
+        logger.debug(`XCUITest companion failed: ${err instanceof Error ? err.message : err}`);
+      }
+    }
+
+    if (strategy.method === 'idb' || (strategy.method === 'cdp' && device.platform === 'ios') || (strategy.method === 'xcuitest')) {
       try {
         const tree = await dumpIosAccessibility(this.shell, device.id, options.timeoutMs);
         logger.debug(`idb: got ${tree.length} root nodes for ${device.name}`);
         return {
           ...base,
-          strategy: { method: 'idb', reason: strategy.method === 'cdp' ? 'CDP fallback to native' : strategy.reason },
+          strategy: { method: 'idb', reason: strategy.method === 'xcuitest' ? 'XCUITest fallback to idb' : strategy.method === 'cdp' ? 'CDP fallback to native' : strategy.reason },
           tree,
           capabilities: { tree: 'basic', sourceMapping: 'none', styles: 'none', protocol: 'idb' },
           hints,

@@ -5,3 +5,5 @@ dist/
 coverage/
 *.tsbuildinfo
 docs/superpowers/
+ios-companion/DerivedData/
+ios-companion/build/

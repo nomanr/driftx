@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { IosBackend } from '../../../src/interact/ios.js';
 import type { DeviceInfo } from '../../../src/types.js';
+import type { CompanionClient } from '../../../src/ios-companion/client.js';
 
 const device: DeviceInfo = {
   id: 'ABCD-1234',
@@ -14,40 +15,58 @@ function makeShell() {
   return { exec: vi.fn().mockResolvedValue({ stdout: '', stderr: '' }) };
 }
 
+function makeCompanion(): CompanionClient {
+  return {
+    status: vi.fn().mockResolvedValue({ status: 'ok' }),
+    tap: vi.fn().mockResolvedValue(undefined),
+    longPress: vi.fn().mockResolvedValue(undefined),
+    swipe: vi.fn().mockResolvedValue(undefined),
+    type: vi.fn().mockResolvedValue(undefined),
+    keyEvent: vi.fn().mockResolvedValue(undefined),
+    hierarchy: vi.fn().mockResolvedValue([]),
+  } as unknown as CompanionClient;
+}
+
 describe('IosBackend', () => {
-  it('taps via simctl io', async () => {
+  it('taps via companion', async () => {
     const shell = makeShell();
-    await new IosBackend(shell).tap(device, { x: 100, y: 200 });
-    expect(shell.exec).toHaveBeenCalledWith('xcrun', ['simctl', 'io', 'ABCD-1234', 'tap', '100', '200']);
+    const companion = makeCompanion();
+    await new IosBackend(shell, companion).tap(device, { x: 100, y: 200 });
+    expect(companion.tap).toHaveBeenCalledWith(100, 200);
   });
 
-  it('long presses via simctl io', async () => {
+  it('long presses via companion', async () => {
     const shell = makeShell();
-    await new IosBackend(shell).longPress(device, { x: 50, y: 75 }, 1000);
-    expect(shell.exec).toHaveBeenCalledWith('xcrun', ['simctl', 'io', 'ABCD-1234', 'longpress', '50', '75']);
+    const companion = makeCompanion();
+    await new IosBackend(shell, companion).longPress(device, { x: 50, y: 75 }, 1000);
+    expect(companion.longPress).toHaveBeenCalledWith(50, 75, 1000);
   });
 
-  it('swipes via simctl io', async () => {
+  it('swipes via companion', async () => {
     const shell = makeShell();
-    await new IosBackend(shell).swipe(device, { x: 10, y: 20 }, { x: 300, y: 400 }, 500);
-    expect(shell.exec).toHaveBeenCalledWith('xcrun', ['simctl', 'io', 'ABCD-1234', 'swipe', '10', '20', '300', '400']);
+    const companion = makeCompanion();
+    await new IosBackend(shell, companion).swipe(device, { x: 10, y: 20 }, { x: 300, y: 400 }, 500);
+    expect(companion.swipe).toHaveBeenCalledWith(10, 20, 300, 400, 500);
   });
 
-  it('types text via simctl io', async () => {
+  it('types text via companion', async () => {
     const shell = makeShell();
-    await new IosBackend(shell).type(device, 'hello');
-    expect(shell.exec).toHaveBeenCalledWith('xcrun', ['simctl', 'io', 'ABCD-1234', 'type', 'hello']);
+    const companion = makeCompanion();
+    await new IosBackend(shell, companion).type(device, 'hello');
+    expect(companion.type).toHaveBeenCalledWith('hello');
   });
 
-  it('sends key via simctl io', async () => {
+  it('sends key via companion', async () => {
     const shell = makeShell();
-    await new IosBackend(shell).keyEvent(device, 'home');
-    expect(shell.exec).toHaveBeenCalledWith('xcrun', ['simctl', 'io', 'ABCD-1234', 'sendkey', 'home']);
+    const companion = makeCompanion();
+    await new IosBackend(shell, companion).keyEvent(device, 'home');
+    expect(companion.keyEvent).toHaveBeenCalledWith('home');
   });
 
-  it('opens URLs via simctl openurl (not under io)', async () => {
+  it('opens URLs via simctl openurl (not via companion)', async () => {
     const shell = makeShell();
-    await new IosBackend(shell).openUrl(device, 'https://example.com');
+    const companion = makeCompanion();
+    await new IosBackend(shell, companion).openUrl(device, 'https://example.com');
     expect(shell.exec).toHaveBeenCalledWith('xcrun', ['simctl', 'openurl', 'ABCD-1234', 'https://example.com']);
   });
 });
