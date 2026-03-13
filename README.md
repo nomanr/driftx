@@ -1,6 +1,19 @@
-# driftx
+<p align="center">
+  <img src="assets/banner.svg" alt="driftx — Eyes and hands for your AI coding agent" width="800" />
+</p>
 
-Give your AI coding agent eyes and hands for your mobile app.
+<p align="center">
+  <a href="https://www.npmjs.com/package/driftx"><img src="https://img.shields.io/npm/v/driftx?color=6366f1&label=npm" alt="npm version" /></a>
+  <a href="https://github.com/nomanr/driftx/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/driftx?color=8b5cf6" alt="license" /></a>
+  <a href="https://www.npmjs.com/package/driftx"><img src="https://img.shields.io/npm/dm/driftx?color=a78bfa" alt="downloads" /></a>
+  <img src="https://img.shields.io/badge/platform-iOS%20%7C%20Android-6366f1" alt="platform" />
+</p>
+
+<p align="center">
+  Give your AI coding agent eyes and hands for your mobile app.
+</p>
+
+---
 
 driftx lets AI agents see your app's screen, tap buttons, type text, swipe, and compare against designs — on iOS simulators and Android emulators. It works with Claude Code, Cursor, Gemini CLI, Codex, and any agent that can run shell commands.
 
@@ -194,4 +207,4 @@ npm run build:ios    # rebuild iOS companion after Swift changes
 
 ## License
 
-MIT
+[MIT](LICENSE)
