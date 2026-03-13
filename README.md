@@ -1,62 +1,93 @@
 # driftx
 
-Give your AI coding agent eyes and hands for your mobile app. driftx lets Claude Code, Cursor, and other AI agents see your app's screen, tap buttons, type text, and compare against designs — on iOS simulators and Android emulators.
+Give your AI coding agent eyes and hands for your mobile app.
 
-## Setup
+driftx lets AI agents see your app's screen, tap buttons, type text, swipe, and compare against designs — on iOS simulators and Android emulators. It works with Claude Code, Cursor, Gemini CLI, Codex, and any agent that can run shell commands.
+
+## How It Works
+
+You tell your agent "test the login flow" or "compare this screen against the Figma mockup." The agent uses driftx to capture screenshots, inspect the component tree, find and tap buttons by their text or testID, type into fields, swipe through lists, and run visual comparisons — all without you touching a device.
+
+The skill triggers automatically. When you ask your agent to interact with your app, it knows to reach for driftx. No manual invocation needed.
+
+## Installation
+
+First, install the CLI globally:
+
+```bash
+npm install -g driftx
+```
+
+Then set up the skill for your coding agent:
 
 ### Claude Code
 
 ```bash
-npm install -g driftx
 driftx setup-claude
 ```
 
-Restart Claude Code. The agent now has the `driftx` skill and can capture screenshots, inspect the UI, interact with the app, and run visual comparisons autonomously.
+Restart Claude Code. The agent now has the `driftx` skill.
 
 ### Cursor
 
+In Cursor Agent chat:
+
+```
+/add-plugin driftx
+```
+
+Or search for "driftx" in the plugin marketplace.
+
+### Gemini CLI
+
 ```bash
-npm install -g driftx
+gemini extensions install https://github.com/nomanr/driftx
 ```
 
-Add to your project's `.cursor/rules` or system prompt:
+### Codex
+
+Tell Codex:
 
 ```
-You have access to `driftx`, a CLI tool for mobile app testing.
+Fetch and follow instructions from https://raw.githubusercontent.com/nomanr/driftx/main/.codex/INSTALL.md
+```
 
-Key commands:
-- `driftx capture -o screenshot.png` — capture a screenshot
-- `driftx inspect --json` — get the component tree with tap targets
-- `driftx tap "Button Text"` — tap a component by text, testID, or name
-- `driftx type input-id "text"` — type into a text field
-- `driftx swipe up` — swipe gestures
-- `driftx compare --design design.png --format json` — compare app against a design
+### Other Agents
 
+driftx is a standard CLI. Any agent that can run shell commands can use it. Add this to your agent's system prompt or rules:
+
+```
+You have access to `driftx` for mobile app testing:
+- driftx capture -o screenshot.png   — capture a screenshot
+- driftx inspect --json              — get the component tree
+- driftx tap "Button Text"           — tap by text, testID, or name
+- driftx type input-id "text"        — type into a field
+- driftx swipe up                    — swipe gestures
+- driftx compare --design design.png --format json — compare against a design
 Always capture a screenshot after interactions to verify the result.
-Run `driftx doctor` to check the environment is ready.
 ```
 
-### Other AI Agents
+### Verify Installation
 
-driftx is a standard CLI. Any agent that can run shell commands can use it. Point the agent at `driftx --help` or provide the commands above in its system prompt.
+```bash
+driftx doctor
+```
 
-## What It Does
-
-**See the app** — Capture screenshots, inspect the React Native component tree, get element positions and text content.
-
-**Interact with the app** — Tap buttons, type text, swipe, navigate back, open deep links. Targets resolve by testID, component name, or visible text.
-
-**Compare against designs** — Pixel-diff against Figma exports or mockups. Run accessibility audits. Detect layout regressions between builds.
+This checks that your environment is ready — Metro, adb, xcrun, simulators.
 
 ## Prerequisites
 
-- **Metro bundler** running (`npx react-native start`)
+- **Metro bundler** running (`npx react-native start`) for tree inspection and tap resolution
 - **Android**: `adb` available, emulator booted
 - **iOS**: `xcrun simctl` available, simulator booted
 
-```bash
-driftx doctor  # verify your setup
-```
+## What Your Agent Can Do
+
+**See the app** — Capture screenshots, inspect the React Native component tree, get element names, testIDs, text content, and positions.
+
+**Interact with the app** — Tap buttons, type text, swipe, navigate back, open deep links. Targets resolve automatically by testID, component name, or visible text.
+
+**Compare against designs** — Pixel-diff against Figma exports or mockups. Run accessibility audits. Detect layout regressions between builds.
 
 ## Commands
 
@@ -96,7 +127,6 @@ driftx open-url "myapp://profile/123"     # deep link
 driftx devices       # list simulators/emulators
 driftx doctor        # check prerequisites
 driftx init          # generate .driftxrc.json
-driftx setup-claude  # register Claude Code plugin
 ```
 
 ## Global Flags
@@ -116,7 +146,7 @@ driftx setup-claude  # register Claude Code plugin
 | Android  | Supported         | Not yet         |
 | iOS      | Supported         | Not yet         |
 
-## How It Works
+## How It Works Under the Hood
 
 **Tap resolution** uses a 4-tier fallback chain:
 1. CDP fiber tree — React Native component names and text
@@ -143,6 +173,14 @@ Or create `.driftxrc.json` manually:
   "threshold": 0.1,
   "diffThreshold": 5
 }
+```
+
+## Updating
+
+driftx notifies you when a new version is available:
+
+```bash
+npm install -g driftx
 ```
 
 ## Development

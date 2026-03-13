@@ -1,0 +1,14 @@
+{
+  "name": "driftx",
+  "displayName": "driftx",
+  "description": "Visual testing and device interaction for React Native and Android — capture, compare, inspect, tap, type, swipe",
+  "version": "0.1.1",
+  "author": {
+    "name": "nomanr"
+  },
+  "homepage": "https://github.com/nomanr/driftx",
+  "repository": "https://github.com/nomanr/driftx",
+  "license": "MIT",
+  "keywords": ["react-native", "android", "visual-testing", "device-interaction", "accessibility"],
+  "skills": "./driftx-plugin/skills/"
+}
