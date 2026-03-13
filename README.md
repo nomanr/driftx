@@ -129,16 +129,11 @@ Checks that Metro, adb, xcrun, and your simulators are ready.
 ## Commands
 
 ```bash
-# Capture & compare
+# See — capture screenshots and inspect the component tree
 driftx capture -o screenshot.png
-driftx compare --design mockup.png --format json
-driftx compare --design mockup.png --with a11y --format json
-driftx compare --baseline --format json
-
-# Inspect
 driftx inspect --json
 
-# Interact
+# Interact — tap, type, swipe, navigate
 driftx tap "Login"                        # by text
 driftx tap login-btn                      # by testID
 driftx tap 150,300 --xy                   # by coordinates
@@ -147,6 +142,11 @@ driftx swipe up
 driftx swipe down --distance 200
 driftx go-back
 driftx open-url "myapp://profile/123"
+
+# Compare — diff against designs, audit accessibility, detect regressions
+driftx compare --design mockup.png --format json
+driftx compare --design mockup.png --with a11y --format json
+driftx compare --baseline --format json
 
 # Utilities
 driftx devices
