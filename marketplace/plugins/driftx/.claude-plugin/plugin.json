@@ -1,0 +1,10 @@
+{
+  "name": "driftx",
+  "description": "Visual comparison, accessibility audit, layout regression, and device interaction for React Native and Android apps",
+  "version": "0.1.0",
+  "author": {
+    "name": "nomanr"
+  },
+  "license": "MIT",
+  "keywords": ["react-native", "visual-diff", "accessibility", "regression", "device-interaction"]
+}

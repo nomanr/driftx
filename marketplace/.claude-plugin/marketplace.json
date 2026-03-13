@@ -1,0 +1,19 @@
+{
+  "name": "local",
+  "description": "Local plugins marketplace",
+  "owner": {
+    "name": "nomanr"
+  },
+  "plugins": [
+    {
+      "name": "driftx",
+      "description": "Visual comparison, accessibility audit, layout regression, and device interaction for React Native and Android apps",
+      "version": "0.1.0",
+      "author": {
+        "name": "nomanr"
+      },
+      "source": "./plugins/driftx",
+      "category": "development"
+    }
+  ]
+}
