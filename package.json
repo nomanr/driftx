@@ -9,7 +9,8 @@
   },
   "files": [
     "dist",
-    "driftx-plugin"
+    "driftx-plugin",
+    "ios-companion"
   ],
   "scripts": {
     "build": "tsup",
@@ -18,7 +19,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:device": "DRIFTX_DEVICE_TESTS=1 vitest run test/device/",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "build:ios": "bash scripts/build-ios-companion.sh",
+    "prepublishOnly": "bash scripts/verify-prebuilt.sh"
   },
   "keywords": [
     "react-native",
