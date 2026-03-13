@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="driftx — Eyes and hands for agentic mobile development" width="800" />
+  <img src="assets/banner.svg" alt="driftx - Eyes and hands for agentic mobile development" width="800" />
 </p>
 
 <p align="center">
@@ -19,18 +19,18 @@
 
 ---
 
-Install driftx, connect your agent, and it can see and interact with your running app — on iOS simulators and Android emulators. Your agent discovers driftx automatically.
+Install driftx, connect your agent, and it can see and interact with your running app on iOS simulators and Android emulators. Your agent discovers driftx automatically.
 
 ## What you can do
 
 Ask your agent things like:
 
-- **"Make this screen match the Figma"** — compare a design mockup against the running app, then fix the differences
-- **"The login button is cut off — why?"** — agent sees the issue, inspects the component tree, and fixes the layout
-- **"What components are on this screen?"** — inspect the full hierarchy with testIDs, bounds, and props
-- **"Run an accessibility check on this screen"** — audit for contrast, labels, and touch target sizes
-- **"Walk through the onboarding flow and screenshot each step"** — navigate, interact, and capture along the way
-- **"Compare this against yesterday's build"** — detect visual regressions between builds
+- **"Make this screen match the Figma"** - compare a design mockup against the running app, then fix the differences
+- **"The login button is cut off, why?"** - agent sees the issue, inspects the component tree, and fixes the layout
+- **"What components are on this screen?"** - inspect the full hierarchy with testIDs, bounds, and props
+- **"Run an accessibility check on this screen"** - audit for contrast, labels, and touch target sizes
+- **"Walk through the onboarding flow and screenshot each step"** - navigate, interact, and capture along the way
+- **"Compare this against yesterday's build"** - detect visual regressions between builds
 
 ## Quick Start
 
@@ -51,7 +51,7 @@ driftx setup-claude
 
 Restart Claude Code. The `driftx` skill is now available.
 
-**Fallback** — if the command above doesn't work, tell Claude Code:
+**Fallback** - if the command above doesn't work, tell Claude Code:
 
 ```
 Fetch and follow instructions from https://raw.githubusercontent.com/nomanr/driftx/main/.codex/INSTALL.md
@@ -107,12 +107,12 @@ Any agent that runs shell commands can use driftx. Add this to your agent's syst
 
 ```
 You have access to `driftx` for seeing and interacting with mobile apps:
-- driftx capture -o screenshot.png   — capture a screenshot
-- driftx inspect --json              — get the component tree
-- driftx tap "Button Text"           — tap by text, testID, or name
-- driftx type input-id "text"        — type into a field
-- driftx swipe up                    — swipe gestures
-- driftx compare --design design.png --format json — compare against a design
+- driftx capture -o screenshot.png                    # capture a screenshot
+- driftx inspect --json                               # get the component tree
+- driftx tap "Button Text"                            # tap by text, testID, or name
+- driftx type input-id "text"                         # type into a field
+- driftx swipe up                                     # swipe gestures
+- driftx compare --design design.png --format json    # compare against a design
 Always capture a screenshot after interactions to verify the result.
 ```
 
@@ -129,11 +129,11 @@ Checks that Metro, adb, xcrun, and your simulators are ready.
 ## Commands
 
 ```bash
-# See — capture screenshots and inspect the component tree
+# See: capture screenshots and inspect the component tree
 driftx capture -o screenshot.png
 driftx inspect --json
 
-# Interact — tap, type, swipe, navigate
+# Interact: tap, type, swipe, navigate
 driftx tap "Login"                        # by text
 driftx tap login-btn                      # by testID
 driftx tap 150,300 --xy                   # by coordinates
@@ -143,7 +143,7 @@ driftx swipe down --distance 200
 driftx go-back
 driftx open-url "myapp://profile/123"
 
-# Compare — diff against designs, audit accessibility, detect regressions
+# Compare: diff against designs, audit accessibility, detect regressions
 driftx compare --design mockup.png --format json
 driftx compare --design mockup.png --with a11y --format json
 driftx compare --baseline --format json
@@ -174,7 +174,7 @@ driftx init
 
 **Tap resolution** uses a 4-tier fallback: CDP fiber tree → XCUITest companion hierarchy → accessibility element query → fiber measurement via `measureInWindow()`.
 
-**iOS companion** is a pre-built XCUITest server that auto-launches on the simulator. Ships in the npm package — no Xcode build step required.
+**iOS companion** is a pre-built XCUITest server that auto-launches on the simulator. Ships in the npm package, no Xcode build step required.
 
 **Visual analysis** compares screenshots pixel-by-pixel against design images, runs accessibility checks, and detects layout regressions between builds.
 
