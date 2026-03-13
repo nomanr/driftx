@@ -19,7 +19,18 @@
 
 ---
 
-Install driftx, connect your agent, and ask it to test your app. It discovers driftx automatically — on iOS simulators and Android emulators.
+Install driftx, connect your agent, and it can see and interact with your running app — on iOS simulators and Android emulators. Your agent discovers driftx automatically.
+
+## What you can do
+
+Ask your agent things like:
+
+- **"Make this screen match the Figma"** — compare a design mockup against the running app, then fix the differences
+- **"The login button is cut off — why?"** — agent sees the issue, inspects the component tree, and fixes the layout
+- **"What components are on this screen?"** — inspect the full hierarchy with testIDs, bounds, and props
+- **"Run an accessibility check on this screen"** — audit for contrast, labels, and touch target sizes
+- **"Walk through the onboarding flow and screenshot each step"** — navigate, interact, and capture along the way
+- **"Compare this against yesterday's build"** — detect visual regressions between builds
 
 ## Quick Start
 
@@ -95,7 +106,7 @@ Verify with `driftx doctor`, then close and restart the chat.
 Any agent that runs shell commands can use driftx. Add this to your agent's system prompt:
 
 ```
-You have access to `driftx` for mobile app testing:
+You have access to `driftx` for seeing and interacting with mobile apps:
 - driftx capture -o screenshot.png   — capture a screenshot
 - driftx inspect --json              — get the component tree
 - driftx tap "Button Text"           — tap by text, testID, or name
