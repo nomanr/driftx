@@ -6,7 +6,7 @@ import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { RealShell } from './shell.js';
 import { loadConfig } from './config.js';
-import { createLogger, setLogger } from './logger.js';
+import { createLogger, setLogger, getLogger } from './logger.js';
 import { checkPrerequisites } from './prerequisites.js';
 import { computeDoctorExitCode } from './commands/doctor.js';
 import { detectFramework, generateConfig } from './commands/init.js';
@@ -23,6 +23,10 @@ import { compareFormatter } from './formatters/compare.js';
 import type { FormatterContext } from './formatters/types.js';
 import { createBackend } from './interact/backend.js';
 import { GestureExecutor } from './interact/gestures.js';
+import { CompanionLauncher } from './ios-companion/launcher.js';
+import { parseCompanionHierarchy } from './ios-companion/hierarchy-parser.js';
+import { measureElementByText, detectBundleId } from './inspect/cdp-client.js';
+import { checkForUpdate } from './update-notifier.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
@@ -36,6 +40,29 @@ function getFormatterContext(opts: Record<string, unknown>): FormatterContext {
 }
 
 export function createProgram(): Command {
+  let companionLauncher: CompanionLauncher | undefined;
+  let resolvedBundleId: string | undefined;
+
+  function getCompanionLauncher(port: number): CompanionLauncher {
+    if (!companionLauncher) {
+      companionLauncher = new CompanionLauncher(port);
+    }
+    return companionLauncher;
+
+  }
+
+  async function getBundleId(program: Command, metroPort: number, deviceName?: string): Promise<string | undefined> {
+    const explicit = program.opts().bundleId as string | undefined;
+    if (explicit) return explicit;
+    if (resolvedBundleId) return resolvedBundleId;
+    const detected = await detectBundleId(metroPort, deviceName);
+    if (detected) {
+      resolvedBundleId = detected;
+      getLogger().debug(`Auto-detected bundle ID: ${detected}`);
+    }
+    return resolvedBundleId;
+  }
+
   const program = new Command();
   program
     .name('driftx')
@@ -44,7 +71,8 @@ export function createProgram(): Command {
     .option('--verbose', 'enable debug logging')
     .option('--quiet', 'suppress all output except errors')
     .option('--format <type>', 'output format: terminal, markdown, json', 'terminal')
-    .option('--copy', 'copy output to clipboard');
+    .option('--copy', 'copy output to clipboard')
+    .option('--bundle-id <id>', 'iOS app bundle identifier for companion');
 
   program.hook('preAction', (_thisCommand, actionCommand) => {
     const opts = actionCommand.optsWithGlobals();
@@ -167,14 +195,16 @@ export function createProgram(): Command {
         device = await pickDevice(booted);
       }
 
-      const inspector = new TreeInspector(shell, process.cwd());
+      const launcher = device.platform === 'ios' ? getCompanionLauncher(config.companionPort) : undefined;
+      const inspector = new TreeInspector(shell, process.cwd(), launcher);
+      const globalOpts = this.optsWithGlobals();
       const result = await inspector.inspect(device, {
         metroPort: config.metroPort,
         devToolsPort: config.devToolsPort,
         timeoutMs: config.timeouts.treeInspectionMs,
+        bundleId: await getBundleId(program, config.metroPort, device.name),
       });
 
-      const globalOpts = this.optsWithGlobals();
       if (opts.json) globalOpts.format = 'json';
       const ctx = getFormatterContext(globalOpts);
       await formatOutput(inspectFormatter, result, ctx);
@@ -200,7 +230,9 @@ export function createProgram(): Command {
         device = await pickDevice(booted);
       }
 
-      const backend = createBackend(shell, device.platform);
+      const launcher = device.platform === 'ios' ? getCompanionLauncher(config.companionPort) : undefined;
+      const companion = launcher ? await launcher.ensureRunning(device.id, await getBundleId(program, config.metroPort, device.name)) : undefined;
+      const backend = createBackend(shell, device.platform, companion);
       const executor = new GestureExecutor(backend);
 
       let result;
@@ -208,13 +240,40 @@ export function createProgram(): Command {
         const [x, y] = target.split(',').map(Number);
         result = await executor.tapXY(device, x, y);
       } else {
-        const inspector = new TreeInspector(shell, process.cwd());
+        const inspector = new TreeInspector(shell, process.cwd(), launcher);
         const inspectResult = await inspector.inspect(device, {
           metroPort: config.metroPort,
           devToolsPort: config.devToolsPort,
           timeoutMs: config.timeouts.treeInspectionMs,
+          bundleId: await getBundleId(program, config.metroPort, device.name),
         });
         result = await executor.tap(device, inspectResult.tree, target);
+
+        if (!result.success && result.error?.includes('Target not found') && companion) {
+          const rawNodes = await companion.hierarchy();
+          const companionTree = parseCompanionHierarchy(rawNodes);
+          result = await executor.tap(device, companionTree, target);
+        }
+
+        if (!result.success && result.error?.includes('Target not found') && companion) {
+          const frame = await companion.find(target);
+          if (frame) {
+            const cx = Math.round(frame.x + frame.width / 2);
+            const cy = Math.round(frame.y + frame.height / 2);
+            result = await executor.tapXY(device, cx, cy);
+            result.target = { x: cx, y: cy, resolvedFrom: `xcuitest-find:${target}` };
+          }
+        }
+
+        if (!result.success && result.error?.includes('Target not found')) {
+          const bounds = await measureElementByText(config.metroPort, target, device.name);
+          if (bounds) {
+            const cx = Math.round(bounds.x + bounds.width / 2);
+            const cy = Math.round(bounds.y + bounds.height / 2);
+            result = await executor.tapXY(device, cx, cy);
+            result.target = { x: cx, y: cy, resolvedFrom: `cdp-measure:${target}` };
+          }
+        }
       }
       console.log(JSON.stringify(result, null, 2));
     });
@@ -238,16 +297,36 @@ export function createProgram(): Command {
         device = await pickDevice(booted);
       }
 
-      const inspector = new TreeInspector(shell, process.cwd());
+      const launcher = device.platform === 'ios' ? getCompanionLauncher(config.companionPort) : undefined;
+      const companion = launcher ? await launcher.ensureRunning(device.id, await getBundleId(program, config.metroPort, device.name)) : undefined;
+      const inspector = new TreeInspector(shell, process.cwd(), launcher);
       const inspectResult = await inspector.inspect(device, {
         metroPort: config.metroPort,
         devToolsPort: config.devToolsPort,
         timeoutMs: config.timeouts.treeInspectionMs,
+        bundleId: await getBundleId(program, config.metroPort, device.name),
       });
 
-      const backend = createBackend(shell, device.platform);
+      const backend = createBackend(shell, device.platform, companion);
       const executor = new GestureExecutor(backend);
-      const result = await executor.typeInto(device, inspectResult.tree, target, text);
+      let result = await executor.typeInto(device, inspectResult.tree, target, text);
+
+      if (!result.success && result.error?.includes('Target not found') && companion) {
+        const rawNodes = await companion.hierarchy();
+        const companionTree = parseCompanionHierarchy(rawNodes);
+        result = await executor.typeInto(device, companionTree, target, text);
+      }
+
+      if (!result.success && result.error?.includes('Target not found') && companion) {
+        const frame = await companion.find(target);
+        if (frame) {
+          const cx = Math.round(frame.x + frame.width / 2);
+          const cy = Math.round(frame.y + frame.height / 2);
+          await backend.tap(device, { x: cx, y: cy });
+          await backend.type(device, text);
+          result = { success: true, action: 'typeInto', target: { x: cx, y: cy, resolvedFrom: `xcuitest-find:${target}` }, durationMs: Date.now() };
+        }
+      }
       console.log(JSON.stringify(result, null, 2));
     });
 
@@ -255,8 +334,10 @@ export function createProgram(): Command {
     .command('swipe <direction>')
     .description('Swipe up, down, left, or right')
     .option('-d, --device <id>', 'device ID or name')
+    .option('--distance <n>', 'swipe distance in points', parseInt)
     .action(async (direction: string, opts: Record<string, unknown>) => {
       const shell = new RealShell();
+      const config = await loadConfig();
       const discovery = new DeviceDiscovery(shell);
       const devices = await discovery.list();
       const booted = devices.filter((d) => d.state === 'booted');
@@ -269,9 +350,11 @@ export function createProgram(): Command {
         device = await pickDevice(booted);
       }
 
-      const backend = createBackend(shell, device.platform);
+      const launcher = device.platform === 'ios' ? getCompanionLauncher(config.companionPort) : undefined;
+      const companion = launcher ? await launcher.ensureRunning(device.id, await getBundleId(program, config.metroPort, device.name)) : undefined;
+      const backend = createBackend(shell, device.platform, companion);
       const executor = new GestureExecutor(backend);
-      const result = await executor.swipe(device, direction as 'up' | 'down' | 'left' | 'right');
+      const result = await executor.swipe(device, direction as 'up' | 'down' | 'left' | 'right', opts.distance as number | undefined);
       console.log(JSON.stringify(result, null, 2));
     });
 
@@ -281,6 +364,7 @@ export function createProgram(): Command {
     .option('-d, --device <id>', 'device ID or name')
     .action(async (opts: Record<string, unknown>) => {
       const shell = new RealShell();
+      const config = await loadConfig();
       const discovery = new DeviceDiscovery(shell);
       const devices = await discovery.list();
       const booted = devices.filter((d) => d.state === 'booted');
@@ -293,7 +377,9 @@ export function createProgram(): Command {
         device = await pickDevice(booted);
       }
 
-      const backend = createBackend(shell, device.platform);
+      const launcher = device.platform === 'ios' ? getCompanionLauncher(config.companionPort) : undefined;
+      const companion = launcher ? await launcher.ensureRunning(device.id, await getBundleId(program, config.metroPort, device.name)) : undefined;
+      const backend = createBackend(shell, device.platform, companion);
       const executor = new GestureExecutor(backend);
       const result = await executor.goBack(device);
       console.log(JSON.stringify(result, null, 2));
@@ -305,6 +391,7 @@ export function createProgram(): Command {
     .option('-d, --device <id>', 'device ID or name')
     .action(async (url: string, opts: Record<string, unknown>) => {
       const shell = new RealShell();
+      const config = await loadConfig();
       const discovery = new DeviceDiscovery(shell);
       const devices = await discovery.list();
       const booted = devices.filter((d) => d.state === 'booted');
@@ -317,7 +404,9 @@ export function createProgram(): Command {
         device = await pickDevice(booted);
       }
 
-      const backend = createBackend(shell, device.platform);
+      const launcher = device.platform === 'ios' ? getCompanionLauncher(config.companionPort) : undefined;
+      const companion = launcher ? await launcher.ensureRunning(device.id, await getBundleId(program, config.metroPort, device.name)) : undefined;
+      const backend = createBackend(shell, device.platform, companion);
       const executor = new GestureExecutor(backend);
       const result = await executor.openUrl(device, url);
       console.log(JSON.stringify(result, null, 2));
@@ -377,5 +466,8 @@ export function createProgram(): Command {
 
 export function run(argv: string[]): void {
   const program = createProgram();
+  checkForUpdate(pkg.version).then((msg) => {
+    if (msg) process.stderr.write(msg + '\n');
+  }).catch(() => {});
   program.parseAsync(argv);
 }
