@@ -34,6 +34,14 @@
     "testing"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nomanr/driftx.git"
+  },
+  "homepage": "https://driftx.nomanr.com",
+  "bugs": {
+    "url": "https://github.com/nomanr/driftx/issues"
+  },
   "engines": {
     "node": ">=18"
   },
