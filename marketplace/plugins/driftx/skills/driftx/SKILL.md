@@ -6,7 +6,7 @@ description: Visual comparison, accessibility audit, layout regression, and devi
 # driftx — Visual Analysis for React Native & Android
 
 Use driftx when the user wants to:
-- Compare their running app against a design image (Figma export, mockup, etc.)
+- Compare their running app against a design image (from Figma, Google Stitch, Penpot, or any exported mockup)
 - Run an accessibility audit on the component tree
 - Detect layout regressions between builds
 - Inspect the React Native component tree on a device
@@ -259,18 +259,57 @@ Mark dynamic data rows as **OK** even if the values differ. Only flag structural
 
 ## Workflow Patterns
 
+### Design-to-code verification (general pattern)
+
+driftx works with any design source. **You MUST follow this pattern for every design-to-code task. Do not skip any step.**
+
+1. **Get the design image** from whatever tool the user is using
+2. **Save it locally** as a PNG (e.g., `/tmp/design-target.png`) to use as the driftx comparison target
+3. **Capture a "before" screenshot**: `npx driftx capture -o /tmp/before.png` -- this records the starting state before any code changes
+4. **Write or modify code** to match the design
+5. **Capture an "after" screenshot**: `npx driftx capture -o /tmp/after.png` -- this records the state after code changes
+6. **Compare against the design**: `npx driftx compare --design /tmp/design-target.png --format json`
+7. **Read the results** and classify differences as dynamic data or structural issues
+8. **Test the feature** -- use driftx to interact with the new UI (tap buttons, type into inputs, swipe, etc.) and capture screenshots to verify the interactions work correctly
+9. **Iterate** -- fix structural or interaction issues, capture a new screenshot, re-compare until it matches
+
+**Mandatory screenshots:** You MUST capture a screenshot of the app BEFORE making changes and AFTER making changes. This is not optional. The before/after pair proves the work was done and shows what changed. After each subsequent code change, capture another screenshot and re-compare to verify the UI is converging toward the design.
+
+**Mandatory interaction testing:** After the UI matches the design, you MUST test every interactive element using driftx (tap, type, swipe). Do not consider a feature complete until you have verified that all interactions work. Capture screenshots after each interaction to confirm the expected behavior.
+
+### Compare against a Google Stitch design
+
+If the user has the Stitch MCP server connected:
+
+1. Use `get_screen` to retrieve the screen details (screenshot URL, HTML code)
+2. Download the screenshot using `curl -L` and save as PNG locally (e.g., `/tmp/stitch-design.png`)
+3. Optionally download the HTML code for implementation reference
+4. Run `npx driftx compare --design /tmp/stitch-design.png --format json`
+5. Read the JSON output and artifact files to understand differences
+6. Fix structural issues, re-compare until it matches
+
 ### Compare against a Figma design
 
-If the user has a Figma MCP server connected, use it to export the frame as an image first, then run driftx:
+If the user has a Figma MCP server connected:
 
-1. Use Figma MCP to get the design frame → save as PNG
-2. Run `npx driftx compare --design <saved-image-path> --format json`
-3. Read the JSON output to understand differences
-4. Read artifact files (diff mask, report.md) for visual context
-5. **Classify each difference** as dynamic data or structural issue
-6. Only suggest code fixes for structural issues
+1. Use Figma MCP to get the design frame and export as PNG
+2. Save the exported image locally (e.g., `/tmp/figma-design.png`)
+3. Run `npx driftx compare --design /tmp/figma-design.png --format json`
+4. Read the JSON output to understand differences
+5. Read artifact files (diff mask, report.md) for visual context
+6. **Classify each difference** as dynamic data or structural issue
+7. Only suggest code fixes for structural issues
 
-If no Figma MCP, ask the user to provide the design image path.
+### Compare against any other design source
+
+For other tools (Penpot, Framer, Galileo AI, or a plain image file):
+
+1. Get the design image -- export from the tool, or use the path the user provides
+2. Save locally as PNG if not already on disk
+3. Run `npx driftx compare --design <path> --format json`
+4. Follow the same classify-and-fix loop
+
+If no design tool MCP is available, ask the user to provide the design image path.
 
 ### Accessibility audit
 
