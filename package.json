@@ -10,9 +10,12 @@
   "files": [
     "dist",
     "driftx-plugin",
-    "ios-companion"
+    "ios-companion",
+    "scripts/postinstall.mjs"
   ],
   "scripts": {
+    "prebuild": "node -e \"const p=require('./driftx-plugin/.claude-plugin/plugin.json');p.version=require('./package.json').version;require('fs').writeFileSync('./driftx-plugin/.claude-plugin/plugin.json',JSON.stringify(p,null,2)+'\\n')\"",
+    "postinstall": "node scripts/postinstall.mjs 2>/dev/null || true",
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",

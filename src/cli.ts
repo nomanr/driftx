@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { createRequire } from 'module';
-import { existsSync, mkdirSync, readFileSync, readdirSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -415,7 +415,10 @@ export function createProgram(): Command {
   program
     .command('setup-claude')
     .description('Register driftx as a Claude Code plugin')
-    .action(() => {
+    .option('--silent', 'suppress output')
+    .action((opts: Record<string, unknown>) => {
+      const silent = !!opts.silent;
+      const log = (...args: unknown[]) => { if (!silent) console.log(...args); };
       const claudeDir = join(homedir(), '.claude');
       const pluginsDir = join(claudeDir, 'plugins');
       const driftxPluginDir = join(pluginsDir, 'driftx');
@@ -441,6 +444,18 @@ export function createProgram(): Command {
       }
       symlinkSync(skillSource, driftxPluginDir);
 
+      const pluginJsonPath = join(skillSource, '.claude-plugin', 'plugin.json');
+      try {
+        const pluginJson = JSON.parse(readFileSync(pluginJsonPath, 'utf-8'));
+        pluginJson.version = pkg.version;
+        writeFileSync(pluginJsonPath, JSON.stringify(pluginJson, null, 2) + '\n');
+      } catch {}
+
+      const cacheDir = join(pluginsDir, 'cache', 'local', 'driftx');
+      if (existsSync(cacheDir)) {
+        rmSync(cacheDir, { recursive: true, force: true });
+      }
+
       let registry: { version: number; plugins: Record<string, unknown[]> } = { version: 2, plugins: {} };
       try {
         registry = JSON.parse(readFileSync(registryPath, 'utf-8'));
@@ -455,10 +470,42 @@ export function createProgram(): Command {
       }];
 
       writeFileSync(registryPath, JSON.stringify(registry, null, 2));
-      console.log('driftx registered as Claude Code plugin.');
-      console.log(`  Symlink: ${driftxPluginDir} -> ${skillSource}`);
-      console.log(`  Registry: ${registryPath}`);
-      console.log('\nRestart Claude Code to pick up the driftx skill.');
+      log('driftx registered as Claude Code plugin.');
+      log(`  Symlink: ${driftxPluginDir} -> ${skillSource}`);
+      log(`  Registry: ${registryPath}`);
+      log('\nRestart Claude Code to pick up the driftx skill.');
+    });
+
+  program
+    .command('setup-cursor')
+    .description('Add driftx skill to a Cursor project')
+    .action(() => {
+      const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+      const skillPath = join(packageRoot, 'driftx-plugin', 'skills', 'driftx', 'SKILL.md');
+
+      if (!existsSync(skillPath)) {
+        console.error(`SKILL.md not found at ${skillPath}`);
+        process.exitCode = 1;
+        return;
+      }
+
+      const skillContent = readFileSync(skillPath, 'utf-8')
+        .replace(/^---[\s\S]*?---\n*/, '');
+
+      const rulesDir = join(process.cwd(), '.cursor', 'rules');
+      mkdirSync(rulesDir, { recursive: true });
+
+      const targetPath = join(rulesDir, 'driftx.mdc');
+      writeFileSync(targetPath, `---
+description: driftx - Visual comparison, accessibility audit, layout regression, and device interaction for mobile apps
+globs:
+alwaysApply: true
+---
+
+${skillContent}`);
+
+      console.log(`driftx skill written to ${targetPath}`);
+      console.log('Cursor will pick it up automatically.');
     });
 
   return program;
