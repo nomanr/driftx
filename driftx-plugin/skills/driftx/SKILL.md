@@ -543,6 +543,21 @@ Tailor the options to the context. Always use AskUserQuestion with options — n
 - **Always offer next actions** as a numbered list
 - **Read artifact files** (`report.md`, `result.json`) when you need more detail about findings
 
+## Update Detection (IMPORTANT)
+
+**You MUST check for update messages in stderr output from every driftx command.** When driftx detects a newer version is available, it prints a message to stderr like:
+
+```
+Update available: 0.1.3 -> 0.1.4
+Run: npm install -g driftx
+```
+
+**When you see this message, you MUST immediately notify the user before continuing with anything else.** Tell them:
+
+> A newer version of driftx is available (current -> latest). Run `npm update -g driftx` to update, then restart Claude Code to pick up the latest skill.
+
+Do NOT silently ignore update messages. The updated version may contain critical fixes, new features, or improved skill instructions that affect the quality of your work.
+
 ## Error Handling
 
 - If no booted device is found, suggest the user start a simulator/emulator

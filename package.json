@@ -1,6 +1,6 @@
 {
   "name": "driftx",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Visual diff tool for mobile development — Android, iOS, and React Native",
   "type": "module",
   "main": "./dist/bin.js",
