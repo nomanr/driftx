@@ -121,11 +121,13 @@ Always capture a screenshot after interactions to verify the result.
 
 ### 3. Verify
 
-```bash
-npx driftx doctor
+Ask your AI agent:
+
+```
+What do you know about driftx?
 ```
 
-Checks that Metro, adb, xcrun, and your simulators are ready.
+If it describes driftx and its capabilities, you're all set. You can also run `npx driftx doctor` to check that Metro, adb, xcrun, and your simulators are ready.
 
 ## Commands
 
