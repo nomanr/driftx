@@ -17,9 +17,7 @@
   <sub>Works with Claude Code · Cursor · Gemini CLI · Codex · any agent that runs shell commands</sub>
 </p>
 
-<p align="center">
-  <video src="https://github.com/nomanr/driftx/raw/main/.github/res/overview.mp4" width="800" autoplay loop muted playsinline></video>
-</p>
+https://github.com/user-attachments/assets/9d757aa6-ac70-4eae-bbf4-49df70ff345a
 
 ---
 
@@ -38,9 +36,7 @@ Ask your agent things like:
 
 ### See it in action
 
-<p align="center">
-  <video src="https://github.com/nomanr/driftx/raw/main/.github/res/demo.mp4" width="800" autoplay loop muted playsinline></video>
-</p>
+https://github.com/user-attachments/assets/c99076cc-83fc-4c23-b215-0d1b3912f991
 
 ## Quick Start
 
