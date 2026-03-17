@@ -1,8 +1,10 @@
-<p align="center">
-  <img src="assets/banner.svg" alt="driftx - Eyes and hands for agentic mobile development" width="800" />
-</p>
+# driftx
 
-<p align="center">
+Your AI agent can code. Now it can use your app.
+
+driftx gives coding agents eyes and hands inside apps running on iOS simulators and Android emulators.
+
+<p>
   <a href="https://www.npmjs.com/package/driftx"><img src="https://img.shields.io/npm/v/driftx?style=flat-square&color=e8a23e&label=npm" alt="npm version" /></a>
   &nbsp;
   <a href="https://github.com/nomanr/driftx/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/driftx?style=flat-square&color=c49344" alt="license" /></a>
@@ -12,16 +14,11 @@
   <img src="https://img.shields.io/badge/iOS%20%7C%20Android-e8a23e?style=flat-square&label=platform" alt="platform" />
 </p>
 
-<p align="center">
-  <b>Let AI agents see, tap, type, swipe, and visually diff your React Native app.</b><br/>
-  <sub>Works with Claude Code · Cursor · Gemini CLI · Codex · any agent that runs shell commands</sub>
-</p>
+### Watch an AI agent inspect, interact with, and verify a live app
 
 https://github.com/user-attachments/assets/9d757aa6-ac70-4eae-bbf4-49df70ff345a
 
----
-
-Install driftx, connect your agent, and it can see and interact with your running app on iOS simulators and Android emulators. Your agent discovers driftx automatically.
+Fix UI bugs faster, compare screens to designs, and validate real app flows visually.
 
 ## What you can do
 
