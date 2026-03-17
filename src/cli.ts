@@ -10,6 +10,8 @@ import { createLogger, setLogger, getLogger } from './logger.js';
 import { checkPrerequisites } from './prerequisites.js';
 import { computeDoctorExitCode } from './commands/doctor.js';
 import { detectFramework, generateConfig } from './commands/init.js';
+import { getCacheDir } from './cache-dir.js';
+import { RunStore } from './run-store.js';
 import { DeviceDiscovery } from './devices/discovery.js';
 import { runCapture } from './commands/capture.js';
 import { runCompare } from './commands/compare.js';
@@ -30,6 +32,77 @@ import { checkForUpdate } from './update-notifier.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
+
+function setupClaude(skillSource: string, opts: { silent: boolean }): void {
+  const log = (...args: unknown[]) => { if (!opts.silent) console.log(...args); };
+  const pluginsDir = join(homedir(), '.claude', 'plugins');
+  const driftxPluginDir = join(pluginsDir, 'driftx');
+  const registryPath = join(pluginsDir, 'installed_plugins.json');
+
+  mkdirSync(pluginsDir, { recursive: true });
+
+  if (existsSync(driftxPluginDir)) {
+    try { unlinkSync(driftxPluginDir); } catch {
+      console.error(`Could not remove existing ${driftxPluginDir}. Remove it manually and retry.`);
+      process.exitCode = 1;
+      return;
+    }
+  }
+  symlinkSync(skillSource, driftxPluginDir);
+
+  const pluginJsonPath = join(skillSource, '.claude-plugin', 'plugin.json');
+  try {
+    const pluginJson = JSON.parse(readFileSync(pluginJsonPath, 'utf-8'));
+    pluginJson.version = pkg.version;
+    writeFileSync(pluginJsonPath, JSON.stringify(pluginJson, null, 2) + '\n');
+  } catch {}
+
+  const cacheDir = join(pluginsDir, 'cache', 'local', 'driftx');
+  if (existsSync(cacheDir)) {
+    rmSync(cacheDir, { recursive: true, force: true });
+  }
+
+  let registry: { version: number; plugins: Record<string, unknown[]> } = { version: 2, plugins: {} };
+  try {
+    registry = JSON.parse(readFileSync(registryPath, 'utf-8'));
+  } catch {}
+
+  registry.plugins['driftx@local'] = [{
+    scope: 'user',
+    installPath: driftxPluginDir,
+    version: pkg.version,
+    installedAt: new Date().toISOString(),
+    lastUpdated: new Date().toISOString(),
+  }];
+
+  writeFileSync(registryPath, JSON.stringify(registry, null, 2));
+  log('\u2713 Claude Code: driftx registered as plugin. Restart Claude Code to pick it up.');
+}
+
+function setupCursor(skillPath: string, cwd: string): void {
+  const skillContent = readFileSync(skillPath, 'utf-8')
+    .replace(/^---[\s\S]*?---\n*/, '');
+
+  const rulesDir = join(cwd, '.cursor', 'rules');
+  mkdirSync(rulesDir, { recursive: true });
+
+  const targetPath = join(rulesDir, 'driftx.mdc');
+  writeFileSync(targetPath, `---
+description: driftx - Visual comparison, accessibility audit, layout regression, and device interaction for mobile apps
+globs:
+alwaysApply: true
+---
+
+${skillContent}`);
+
+  console.log(`\u2713 Cursor: skill written to ${targetPath}`);
+}
+
+function printFooter(): void {
+  console.log('\nNext: run \x1b[36mdriftx doctor\x1b[0m to verify your environment.');
+  console.log('\nHaving trouble? Paste this into your AI tool and let it fix the issue:');
+  console.log('  https://raw.githubusercontent.com/nomanr/driftx/main/TROUBLESHOOT.md');
+}
 
 function getFormatterContext(opts: Record<string, unknown>): FormatterContext {
   return {
@@ -94,21 +167,51 @@ export function createProgram(): Command {
 
   program
     .command('init')
-    .description('Initialize driftx configuration for this project')
-    .action(async () => {
+    .description('Initialize driftx: create project config and register with AI tools')
+    .option('--skip-editor', 'skip AI tool detection and setup')
+    .action(async (opts: Record<string, unknown>) => {
       const cwd = process.cwd();
+
+      // Step 1: Create project config
       const files = readdirSync(cwd);
       let packageJson: Record<string, unknown> | undefined;
       try {
         packageJson = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf-8'));
-      } catch {
-        // no package.json
-      }
+      } catch {}
       const framework = detectFramework(files, packageJson);
       const config = generateConfig(framework);
       const configPath = join(cwd, '.driftxrc.json');
       writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
-      console.log(`Created ${configPath} (framework: ${framework})`);
+      console.log(`\u2713 Created .driftxrc.json (framework: ${framework})`);
+
+      if (opts.skipEditor) {
+        printFooter();
+        return;
+      }
+
+      // Step 2: Detect and set up AI tools
+      const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+      const skillSource = join(packageRoot, 'driftx-plugin');
+      const skillPath = join(packageRoot, 'driftx-plugin', 'skills', 'driftx', 'SKILL.md');
+
+      const claudeDir = join(homedir(), '.claude');
+      const cursorDir = join(cwd, '.cursor');
+
+      const hasClaudeCode = existsSync(claudeDir);
+      const hasCursor = existsSync(cursorDir) || existsSync(join(cwd, '.cursorignore'));
+
+      if (!hasClaudeCode && !hasCursor) {
+        console.log('\u2713 No AI tools detected (run setup-claude or setup-cursor manually)');
+      } else {
+        if (hasClaudeCode && existsSync(skillSource)) {
+          setupClaude(skillSource, { silent: false });
+        }
+        if (hasCursor && existsSync(skillPath)) {
+          setupCursor(skillPath, cwd);
+        }
+      }
+
+      printFooter();
     });
 
   program
@@ -413,17 +516,23 @@ export function createProgram(): Command {
     });
 
   program
+    .command('clean')
+    .description('Remove cached run artifacts older than a given age')
+    .option('--max-age <days>', 'max age in days (default: 7)', '7')
+    .option('--all', 'remove all cached runs')
+    .action((opts: Record<string, unknown>) => {
+      const store = new RunStore();
+      const maxAgeMs = opts.all ? 0 : Number(opts.maxAge) * 24 * 60 * 60 * 1000;
+      const removed = store.cleanOlderThan(maxAgeMs);
+      const cacheDir = getCacheDir();
+      console.log(`Removed ${removed} run(s) from ${cacheDir}/runs/`);
+    });
+
+  program
     .command('setup-claude')
     .description('Register driftx as a Claude Code plugin')
     .option('--silent', 'suppress output')
     .action((opts: Record<string, unknown>) => {
-      const silent = !!opts.silent;
-      const log = (...args: unknown[]) => { if (!silent) console.log(...args); };
-      const claudeDir = join(homedir(), '.claude');
-      const pluginsDir = join(claudeDir, 'plugins');
-      const driftxPluginDir = join(pluginsDir, 'driftx');
-      const registryPath = join(pluginsDir, 'installed_plugins.json');
-
       const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
       const skillSource = join(packageRoot, 'driftx-plugin');
 
@@ -433,47 +542,7 @@ export function createProgram(): Command {
         return;
       }
 
-      mkdirSync(pluginsDir, { recursive: true });
-
-      if (existsSync(driftxPluginDir)) {
-        try { unlinkSync(driftxPluginDir); } catch {
-          console.error(`Could not remove existing ${driftxPluginDir}. Remove it manually and retry.`);
-          process.exitCode = 1;
-          return;
-        }
-      }
-      symlinkSync(skillSource, driftxPluginDir);
-
-      const pluginJsonPath = join(skillSource, '.claude-plugin', 'plugin.json');
-      try {
-        const pluginJson = JSON.parse(readFileSync(pluginJsonPath, 'utf-8'));
-        pluginJson.version = pkg.version;
-        writeFileSync(pluginJsonPath, JSON.stringify(pluginJson, null, 2) + '\n');
-      } catch {}
-
-      const cacheDir = join(pluginsDir, 'cache', 'local', 'driftx');
-      if (existsSync(cacheDir)) {
-        rmSync(cacheDir, { recursive: true, force: true });
-      }
-
-      let registry: { version: number; plugins: Record<string, unknown[]> } = { version: 2, plugins: {} };
-      try {
-        registry = JSON.parse(readFileSync(registryPath, 'utf-8'));
-      } catch {}
-
-      registry.plugins['driftx@local'] = [{
-        scope: 'user',
-        installPath: driftxPluginDir,
-        version: pkg.version,
-        installedAt: new Date().toISOString(),
-        lastUpdated: new Date().toISOString(),
-      }];
-
-      writeFileSync(registryPath, JSON.stringify(registry, null, 2));
-      log('driftx registered as Claude Code plugin.');
-      log(`  Symlink: ${driftxPluginDir} -> ${skillSource}`);
-      log(`  Registry: ${registryPath}`);
-      log('\nRestart Claude Code to pick up the driftx skill.');
+      setupClaude(skillSource, { silent: !!opts.silent });
     });
 
   program
@@ -489,23 +558,7 @@ export function createProgram(): Command {
         return;
       }
 
-      const skillContent = readFileSync(skillPath, 'utf-8')
-        .replace(/^---[\s\S]*?---\n*/, '');
-
-      const rulesDir = join(process.cwd(), '.cursor', 'rules');
-      mkdirSync(rulesDir, { recursive: true });
-
-      const targetPath = join(rulesDir, 'driftx.mdc');
-      writeFileSync(targetPath, `---
-description: driftx - Visual comparison, accessibility audit, layout regression, and device interaction for mobile apps
-globs:
-alwaysApply: true
----
-
-${skillContent}`);
-
-      console.log(`driftx skill written to ${targetPath}`);
-      console.log('Cursor will pick it up automatically.');
+      setupCursor(skillPath, process.cwd());
     });
 
   return program;
