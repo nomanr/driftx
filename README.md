@@ -17,6 +17,10 @@
   <sub>Works with Claude Code · Cursor · Gemini CLI · Codex · any agent that runs shell commands</sub>
 </p>
 
+<p align="center">
+  <video src="https://github.com/nomanr/driftx/raw/main/.github/res/overview.mp4" width="800" autoplay loop muted playsinline></video>
+</p>
+
 ---
 
 Install driftx, connect your agent, and it can see and interact with your running app on iOS simulators and Android emulators. Your agent discovers driftx automatically.
@@ -32,6 +36,12 @@ Ask your agent things like:
 - **"Walk through the onboarding flow and screenshot each step"** - navigate, interact, and capture along the way
 - **"Compare this against yesterday's build"** - detect visual regressions between builds
 
+### See it in action
+
+<p align="center">
+  <video src="https://github.com/nomanr/driftx/raw/main/.github/res/demo.mp4" width="800" autoplay loop muted playsinline></video>
+</p>
+
 ## Quick Start
 
 ### 1. Install
@@ -46,10 +56,10 @@ npm install -g driftx
 <summary><strong>Claude Code</strong></summary>
 
 ```bash
-driftx setup-claude
+driftx init
 ```
 
-Restart Claude Code. The `driftx` skill is now available.
+Creates project config and registers the plugin automatically. Restart Claude Code.
 
 **Fallback** - if the command above doesn't work, tell Claude Code:
 
