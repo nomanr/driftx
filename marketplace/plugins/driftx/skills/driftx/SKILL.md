@@ -152,12 +152,14 @@ TaskCreate(
 
 ### Phase 3: Implement & Compare Component by Component
 
+**BUILD IN COMPONENTS, NOT MONOLITHS.** Each task from Phase 2 MUST be implemented as its own component or group of components in separate files. Do NOT build the entire screen in a single file or one long component. If the design has a header, a card list, and a tab bar, those are three separate components. This is what makes per-component comparison meaningful.
+
 **VERIFICATION GATE: You CANNOT mark any task as completed without first reading both the design image and a fresh screenshot with the Read tool.**
 
 For EACH task, follow this exact sequence:
 
 **Step 1** -- Mark task as in_progress (TaskUpdate)
-**Step 2** -- Implement the component
+**Step 2** -- Implement the component as a separate, reusable component
 **Step 3** -- Capture: `npx driftx capture -o /tmp/after-<component>.png`
 **Step 4** -- Read the design image (Read tool). Focus on this component's area.
 **Step 5** -- Read the screenshot (Read tool). Compare against the design.
