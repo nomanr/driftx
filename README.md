@@ -44,30 +44,28 @@ Ask your agent things like:
 
 ## Quick Start
 
-### 1. Install
+### 1. Setup
 
 ```bash
-npm install -g driftx
+npx -y driftx@latest init
 ```
+
+Creates project config and auto-registers with detected AI tools (Claude Code, Cursor). Restart your AI tool after.
 
 ### 2. Connect your agent
 
 <details open>
 <summary><strong>Claude Code</strong></summary>
 
+Handled automatically by `npx -y driftx@latest init`. Just restart Claude Code.
+
+**Fallback** - if auto-detection doesn't work:
+
 ```bash
-driftx init
+npx driftx setup-claude
 ```
 
-Creates project config and registers the plugin automatically. Restart Claude Code.
-
-**Fallback** - if the command above doesn't work, tell Claude Code:
-
-```
-Fetch and follow instructions from https://raw.githubusercontent.com/nomanr/driftx/main/.codex/INSTALL.md
-```
-
-Verify with `driftx doctor`, then close and restart the chat.
+Verify with `npx driftx doctor`, then restart Claude Code.
 
 </details>
 
@@ -117,12 +115,12 @@ Any agent that runs shell commands can use driftx. Add this to your agent's syst
 
 ```
 You have access to `driftx` for seeing and interacting with mobile apps:
-- driftx capture -o screenshot.png                    # capture a screenshot
-- driftx inspect --json                               # get the component tree
-- driftx tap "Button Text"                            # tap by text, testID, or name
-- driftx type input-id "text"                         # type into a field
-- driftx swipe up                                     # swipe gestures
-- driftx compare --design design.png --format json    # compare against a design
+- npx driftx capture -o screenshot.png                    # capture a screenshot
+- npx driftx inspect --json                               # get the component tree
+- npx driftx tap "Button Text"                            # tap by text, testID, or name
+- npx driftx type input-id "text"                         # type into a field
+- npx driftx swipe up                                     # swipe gestures
+- npx driftx compare --design design.png --format json    # compare against a design
 Always capture a screenshot after interactions to verify the result.
 ```
 
@@ -131,7 +129,7 @@ Always capture a screenshot after interactions to verify the result.
 ### 3. Verify
 
 ```bash
-driftx doctor
+npx driftx doctor
 ```
 
 Checks that Metro, adb, xcrun, and your simulators are ready.
@@ -140,28 +138,28 @@ Checks that Metro, adb, xcrun, and your simulators are ready.
 
 ```bash
 # See: capture screenshots and inspect the component tree
-driftx capture -o screenshot.png
-driftx inspect --json
+npx driftx capture -o screenshot.png
+npx driftx inspect --json
 
 # Interact: tap, type, swipe, navigate
-driftx tap "Login"                        # by text
-driftx tap login-btn                      # by testID
-driftx tap 150,300 --xy                   # by coordinates
-driftx type email-input "user@test.com"
-driftx swipe up
-driftx swipe down --distance 200
-driftx go-back
-driftx open-url "myapp://profile/123"
+npx driftx tap "Login"                        # by text
+npx driftx tap login-btn                      # by testID
+npx driftx tap 150,300 --xy                   # by coordinates
+npx driftx type email-input "user@test.com"
+npx driftx swipe up
+npx driftx swipe down --distance 200
+npx driftx go-back
+npx driftx open-url "myapp://profile/123"
 
 # Compare: diff against designs, audit accessibility, detect regressions
-driftx compare --design mockup.png --format json
-driftx compare --design mockup.png --with a11y --format json
-driftx compare --baseline --format json
+npx driftx compare --design mockup.png --format json
+npx driftx compare --design mockup.png --with a11y --format json
+npx driftx compare --baseline --format json
 
 # Utilities
-driftx devices
-driftx doctor
-driftx init
+npx driftx devices
+npx driftx doctor
+npx driftx clean
 ```
 
 ## Flags
@@ -198,7 +196,7 @@ driftx init
 ## Configuration
 
 ```bash
-driftx init
+npx -y driftx@latest init
 ```
 
 Creates `.driftxrc.json`:
