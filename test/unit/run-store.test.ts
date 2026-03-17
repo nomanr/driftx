@@ -83,4 +83,36 @@ describe('RunStore', () => {
     const result = store.getLatestRun();
     expect(result).toBeUndefined();
   });
+
+  it('cleanOlderThan removes old runs', () => {
+    const run1 = store.createRun();
+    const run2 = store.createRun();
+
+    // Backdate run1 by setting mtime to 10 days ago
+    const oldTime = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+    fs.utimesSync(store.getRunPath(run1.runId), oldTime, oldTime);
+
+    const removed = store.cleanOlderThan(7 * 24 * 60 * 60 * 1000);
+    expect(removed).toBe(1);
+    expect(fs.existsSync(store.getRunPath(run1.runId))).toBe(false);
+    expect(fs.existsSync(store.getRunPath(run2.runId))).toBe(true);
+  });
+
+  it('cleanOlderThan with large maxAge removes all runs', () => {
+    const run1 = store.createRun();
+    const run2 = store.createRun();
+    // Set both runs to 1 day old
+    const oldTime = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    fs.utimesSync(store.getRunPath(run1.runId), oldTime, oldTime);
+    fs.utimesSync(store.getRunPath(run2.runId), oldTime, oldTime);
+    // Clean anything older than 1 hour
+    const removed = store.cleanOlderThan(60 * 60 * 1000);
+    expect(removed).toBe(2);
+    expect(store.listRuns()).toHaveLength(0);
+  });
+
+  it('cleanOlderThan returns 0 when no runs exist', () => {
+    const removed = store.cleanOlderThan(7 * 24 * 60 * 60 * 1000);
+    expect(removed).toBe(0);
+  });
 });

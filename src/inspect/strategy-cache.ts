@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { StrategyMethod } from './tree-inspector.js';
+import { getCacheDir } from '../cache-dir.js';
 
 export interface CachedEntry {
   method: StrategyMethod;
@@ -14,8 +15,9 @@ export class StrategyCache {
   private ttlMs: number;
   private entries: Map<string, CachedEntry>;
 
-  constructor(projectRoot: string, ttlMs: number = 60_000) {
-    this.filePath = path.join(projectRoot, '.driftx', 'strategy-cache.json');
+  constructor(overrideDir?: string, ttlMs: number = 60_000) {
+    const baseDir = overrideDir ?? getCacheDir();
+    this.filePath = path.join(baseDir, 'strategy-cache.json');
     this.ttlMs = ttlMs;
     this.entries = this.load();
   }

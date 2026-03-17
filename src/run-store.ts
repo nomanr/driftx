@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { nanoid } from 'nanoid';
+import { getRunsDir } from './cache-dir.js';
 
 export interface RunHandle {
   runId: string;
@@ -10,8 +11,8 @@ export interface RunHandle {
 export class RunStore {
   private baseDir: string;
 
-  constructor(projectRoot: string) {
-    this.baseDir = path.join(projectRoot, '.driftx', 'runs');
+  constructor(overrideDir?: string) {
+    this.baseDir = overrideDir ? path.join(overrideDir, 'runs') : getRunsDir();
   }
 
   createRun(): RunHandle {
@@ -74,5 +75,23 @@ export class RunStore {
       }
     }
     return latest;
+  }
+
+  cleanOlderThan(maxAgeMs: number): number {
+    const runs = this.listRuns();
+    const cutoff = Date.now() - maxAgeMs;
+    let removed = 0;
+    for (const runId of runs) {
+      try {
+        const stat = fs.statSync(this.getRunDir(runId));
+        if (stat.mtimeMs < cutoff) {
+          fs.rmSync(this.getRunDir(runId), { recursive: true, force: true });
+          removed++;
+        }
+      } catch {
+        continue;
+      }
+    }
+    return removed;
   }
 }

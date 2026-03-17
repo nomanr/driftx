@@ -58,7 +58,7 @@ export async function runCapture(
     return { path: options.output, runId: '' };
   }
 
-  const store = new RunStore(projectRoot);
+  const store = new RunStore();
   const run = store.createRun();
   await store.writeArtifact(run.runId, 'screenshot.png', buffer);
   await store.writeMetadata(run.runId, {

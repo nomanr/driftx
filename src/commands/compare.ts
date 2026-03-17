@@ -30,7 +30,7 @@ export async function runCompare(
   config: DriftxConfig,
   options: CompareCommandOptions,
 ): Promise<{ report: CompareReport; exitCode: number; formatData: CompareFormatData }> {
-  const store = new RunStore(process.cwd());
+  const store = new RunStore();
   const run = store.createRun();
 
   let screenshotPath: string;
